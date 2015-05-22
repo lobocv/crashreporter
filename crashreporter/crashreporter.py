@@ -35,6 +35,7 @@ class CrashReporter(object):
     :param html: Create HTML reports (True) or plain text (False).
 
     """
+    report_template = "crashreport%02d.txt"
 
     def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
         self.html = html
@@ -206,7 +207,7 @@ class CrashReporter(object):
 
         ftp.cwd(info['path'])
         with open(tmp, 'rb') as _f:
-            new_filename = 'crashreport%02d' % (len(ftp.nlst()) + 1)
+            new_filename = self.report_template % (len(ftp.nlst()) + 1)
             ftp.storlines('STOR %s' % new_filename, _f)
             self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
             return True
@@ -228,7 +229,7 @@ class CrashReporter(object):
         ftp.cwd(info['path'])
         for report in self._get_offline_reports():
             with open(report, 'rb') as _f:
-                new_filename = 'crashreport%02d' % (len(ftp.nlst()) + 1)
+                new_filename = self.report_template % (len(ftp.nlst()) + 1)
                 ftp.storlines('STOR %s' % new_filename, _f)
         self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
         return True
@@ -304,14 +305,14 @@ class CrashReporter(object):
             # Increment the name of all existing reports
             for ii, report in enumerate(reversed(offline_reports)):
                 n = int(report[-2:])
-                new_name = os.path.join(self.report_dir, "crashreport%02d" % (n + 1))
+                new_name = os.path.join(self.report_dir, self.report_template % (n + 1))
                 shutil.copy2(report, new_name)
             os.remove(report)
             # Delete the oldest report
             if len(offline_reports) >= self._offline_report_limit:
-                oldest = os.path.join(self.report_dir, "crashreport%02d" % (self._offline_report_limit + 1))
+                oldest = os.path.join(self.report_dir, self.report_template % (self._offline_report_limit + 1))
                 os.remove(oldest)
-        new_report_path = os.path.join(self.report_dir, "crashreport01")
+        new_report_path = os.path.join(self.report_dir, self.report_template % 1)
         self._write_report(new_report_path)
 
     def _get_offline_reports(self):
