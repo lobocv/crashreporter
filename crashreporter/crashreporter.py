@@ -18,17 +18,24 @@ from email import encoders
 
 class CrashReporter(object):
     """
-    Create a context manager that emails a report with the traceback on a crash.
-    :param username: sender's email account
-    :param password: sender's email account password
-    :param recipients: list of report recipients
-    :param smtp_host: smtp host address for smtplib.SMTP object
-    :param smtp_port: smtp port for smtplib.SMTP object
-    :param html: Use HTML message for email (True) or plain text (False).
+    Create a context manager that emails or uploads a report by FTP with the traceback on a crash.
+    It can be setup to do both, or just one of the upload methods.
+
+    If a crash report fails to upload, the report is saved locally to the `report_dir` directory. The next time the
+    CrashReporter starts up, it will attempt to upload all offline reports every `check_interval` seconds. After a
+    successful upload the offline reports are deleted. A maximum of `offline_report_limit` reports are saved at any
+    time. Reports are named crashreport.1, crashreport.2, crashreport.3 and so on. The most recent report is always
+    crashreport.1.
+
+    :param report_dir: Directory to save offline reports.
+    :param check_interval: How often the to attempt to send offline reports
+    :param logger: Optional logger to use.
+    :param offline_report_limit: Number of offline reports to save.
+    :param html: Create HTML reports (True) or plain text (False).
+
     """
 
-    def __init__(self, html=False, report_dir=None,
-                 check_interval=5*60, logger=None, offline_report_limit=5):
+    def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
         self.html = html
         self._smtp = None
         self._ftp = None
@@ -310,6 +317,9 @@ class CrashReporter(object):
         return sorted(glob.glob(os.path.join(self.report_dir, "crashreport*")))
 
     def _watcher_thread(self):
+        """
+        Periodically attempt to upload the crash reports. If any upload method is successful, delete the saved reports.
+        """
         great_success = False
         while not great_success:
             time.sleep(self.check_interval)
