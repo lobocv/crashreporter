@@ -16,6 +16,7 @@ from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
 
+
 class CrashReporter(object):
     """
     Create a context manager that emails or uploads a report by FTP with the traceback on a crash.
@@ -335,5 +336,3 @@ class CrashReporter(object):
         if great_success:
             self.delete_offline_reports()
         self.logger.info('CrashReporter: Watcher stopped.')
-
-
