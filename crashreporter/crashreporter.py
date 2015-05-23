@@ -46,7 +46,7 @@ class CrashReporter(object):
         # Setup the directory used to store offline crash reports
         self.report_dir = report_dir
         self.check_interval = check_interval
-        self._offline_report_limit = offline_report_limit
+        self.offline_report_limit = offline_report_limit
         self._watcher = None
         self._watcher_enabled = False
         if report_dir:
@@ -309,8 +309,8 @@ class CrashReporter(object):
                 shutil.copy2(report, new_name)
             os.remove(report)
             # Delete the oldest report
-            if len(offline_reports) >= self._offline_report_limit:
-                oldest = os.path.join(self.report_dir, self.report_template % (self._offline_report_limit + 1))
+            if len(offline_reports) >= self.offline_report_limit:
+                oldest = os.path.join(self.report_dir, self.report_template % (self.offline_report_limit + 1))
                 os.remove(oldest)
         new_report_path = os.path.join(self.report_dir, self.report_template % 1)
         self._write_report(new_report_path)
