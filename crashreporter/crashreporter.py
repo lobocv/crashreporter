@@ -186,7 +186,6 @@ class CrashReporter(object):
                         if c > tb_last.tb_lineno - 50:
                             scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
 
-
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
                       'traceback': tb,
