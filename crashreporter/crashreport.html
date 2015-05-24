@@ -42,21 +42,33 @@
         </DL>
     </b>
 
-<br>
+    <hr>
 
-<table border="1" style="width:800px">
-    <tr>
-        <td align="center" colspan="2">
-            <b>Local Variables in the scope of {{traceback[-1]['module']|e}}</b>
-        </td>
-    </tr>
-    {% for field, value in localvars %}
+    <h4> Source Code</h4>
+    <div style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;">
+        <ol start="{{source_code[0][0]}}">
+            <li style="padding-left"> {{source_code[0][2]}}</li>
+            {% for n, indent, line in source_code[1:] %}
+                <li style="padding-left: {{indent}}px;">{{line}}</li>
+            {% endfor %}
+        </ol>
+    </div>
+
+    <hr>
+
+    <table border="1" style="width:800px">
         <tr>
-            <td style="width:30%">{{ field|e }}</td>
-            <td>{{ value|e }}</td>
+            <td align="center" colspan="2">
+                <b>Local Variables in the scope of {{traceback[-1]['module']|e}}</b>
+            </td>
         </tr>
-    {% endfor %}
-</table>
+        {% for field, value in localvars %}
+            <tr>
+                <td style="width:30%">{{ field|e }}</td>
+                <td>{{ value|e }}</td>
+            </tr>
+        {% endfor %}
+    </table>
 
 </div>
 

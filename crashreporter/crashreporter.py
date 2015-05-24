@@ -9,6 +9,7 @@ import smtplib
 import time
 import logging
 import ftplib
+import inspect
 import jinja2
 
 from threading import Thread
@@ -162,7 +163,9 @@ class CrashReporter(object):
             dt = datetime.datetime.now()
             tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
             error = traceback.format_exception_only(self._etype, self._evalue)[0]
-
+            scope_obj = getattr(tb_last.tb_frame.f_locals['self'], tb[-1]['module'])
+            scope_lines, ln = inspect.getsourcelines(scope_obj)
+            scope_lines = [(ln + i, 30 * (l.count('    ')-1), l.replace('    ', '')) for i, l in enumerate(scope_lines)]
             if 'self' in tb_last.tb_frame.f_locals:
                 _locals = [('self', tb_last.tb_frame.f_locals['self'].__repr__())]
             else:
@@ -178,7 +181,8 @@ class CrashReporter(object):
                       'error': error,
                       'localvars': _locals,
                       'app_name': self.application_name,
-                      'app_version': self.application_version
+                      'app_version': self.application_version,
+                      'source_code': scope_lines
                       }
 
             with open('./crashreporter/crashreport.html', 'r') as _f:
