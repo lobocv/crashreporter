@@ -37,6 +37,8 @@ class CrashReporter(object):
 
     """
     report_template = "crashreport%02d.txt"
+    application_name = None
+    application_version = None
 
     def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
         self.html = html
@@ -150,32 +152,47 @@ class CrashReporter(object):
         """
         Return a string to be used as the email body. Can be html if html is turned on.
         """
+        # Get the last traceback
+        tb_last = self._tb.tb_next
+        while tb_last.tb_next is not None:
+            tb_last = tb_last.tb_next
+        _locals = tb_last.tb_frame.f_locals.copy()
+
         if self.html:
             dt = datetime.datetime.now()
             tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
             error = traceback.format_exception_only(self._etype, self._evalue)[0]
+
+            if 'self' in tb_last.tb_frame.f_locals:
+                _locals = [('self', tb_last.tb_frame.f_locals['self'].__repr__())]
+            else:
+                _locals = []
+            for k, v in tb_last.tb_frame.f_locals.iteritems():
+                if k == 'self':
+                    continue
+                _locals.append((k, v.__repr__()))
+
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
                       'traceback': tb,
-                      'error': error
-                    }
+                      'error': error,
+                      'localvars': _locals,
+                      'app_name': self.application_name,
+                      'app_version': self.application_version
+                      }
 
             with open('./crashreporter/crashreport.html', 'r') as _f:
                 template = jinja2.Template(_f.read())
             html_body = template.render(**fields)
+            with open('report.html', 'w') as _g:
+                _g.write(html_body)
             return html_body
-            # with open('report.html', 'w') as _g:
-            #     _g.write(html_body)
+
         else:
 
             body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
             body += '\n'.join(traceback.format_exception(self._etype, self._evalue, self._tb))
             body += '\n'
-            # Get the last traceback
-            tb_last = self._tb.tb_next
-            while tb_last.tb_next is not None:
-                tb_last = tb_last.tb_next
-            _locals = tb_last.tb_frame.f_locals.copy()
 
             # Print a table of local variables
             limit = 25
