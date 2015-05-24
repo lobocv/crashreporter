@@ -6,6 +6,7 @@ from crashreporter import __version__
 setup(
     name='crashreporter',
     packages=['crashreporter'],  # this must be the same as the name above
+    data_files=[('crashreporter', ['crashreporter/crashreporter.html'])],
     version=__version__,
     description='Track and send crash reports by email or FTP',
     author='Calvin Lobo',
@@ -14,5 +15,5 @@ setup(
     download_url='https://github.com/lobocv/crashreporter/tarball/%s' % __version__,
     keywords=['crash', 'reporting', 'testing', 'debugging', 'bugs'],
     classifiers=[],
-    install_requires=['jinja2>=2.7.3']
+    install_requires=['jinja2'],
 )
