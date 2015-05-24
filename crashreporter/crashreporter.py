@@ -40,6 +40,7 @@ class CrashReporter(object):
     report_template = "crashreport%02d.txt"
     application_name = None
     application_version = None
+    source_code_line_limit = 50
 
     def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
         self.html = html
@@ -183,7 +184,7 @@ class CrashReporter(object):
                 scope_lines = []
                 with open(tb_last.tb_frame.f_locals['__file__'], 'r') as _f:
                     for c, l in enumerate(_f):
-                        if c > tb_last.tb_lineno - 50:
+                        if c > tb_last.tb_lineno - self.source_code_line_limit:
                             scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
 
             fields = {'date': dt.strftime('%d %B %Y'),
