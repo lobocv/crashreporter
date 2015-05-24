@@ -9,6 +9,7 @@ import smtplib
 import time
 import logging
 import ftplib
+import jinja2
 
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
@@ -149,29 +150,47 @@ class CrashReporter(object):
         """
         Return a string to be used as the email body. Can be html if html is turned on.
         """
-        body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
-        body += '\n'.join(traceback.format_exception(self._etype, self._evalue, self._tb))
-        body += '\n'
-        # Get the last traceback
-        tb_last = self._tb.tb_next
-        while tb_last.tb_next is not None:
-            tb_last = tb_last.tb_next
-        _locals = tb_last.tb_frame.f_locals.copy()
+        if self.html:
+            dt = datetime.datetime.now()
+            tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
+            error = traceback.format_exception_only(self._etype, self._evalue)[0]
+            fields = {'date': dt.strftime('%d %B %Y'),
+                      'time': dt.strftime('%I:%M %p'),
+                      'traceback': tb,
+                      'error': error
+                    }
 
-        # Print a table of local variables
-        limit = 25
-        fmt = "{name:<25s}{value:<25s}\n"
-        body += '-' * 90 + '\n'
-        body += fmt.format(name='Variable', value='Value')
-        body += '-' * 90 + '\n'
-        body += fmt.format(name='self', value=_locals.pop('self'))
-        count = 0
-        for name, value in _locals.iteritems():
-            body += fmt.format(name=name, value=value.__repr__())
-            count += 1
-            if count > limit:
-                break
-        return body
+            with open('./crashreporter/crashreport.html', 'r') as _f:
+                template = jinja2.Template(_f.read())
+            html_body = template.render(**fields)
+            return html_body
+            # with open('report.html', 'w') as _g:
+            #     _g.write(html_body)
+        else:
+
+            body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
+            body += '\n'.join(traceback.format_exception(self._etype, self._evalue, self._tb))
+            body += '\n'
+            # Get the last traceback
+            tb_last = self._tb.tb_next
+            while tb_last.tb_next is not None:
+                tb_last = tb_last.tb_next
+            _locals = tb_last.tb_frame.f_locals.copy()
+
+            # Print a table of local variables
+            limit = 25
+            fmt = "{name:<25s}{value:<25s}\n"
+            body += '-' * 90 + '\n'
+            body += fmt.format(name='Variable', value='Value')
+            body += '-' * 90 + '\n'
+            body += fmt.format(name='self', value=_locals.pop('self'))
+            count = 0
+            for name, value in _locals.iteritems():
+                body += fmt.format(name=name, value=value.__repr__())
+                count += 1
+                if count > limit:
+                    break
+            return body
 
     def attachments(self):
         """

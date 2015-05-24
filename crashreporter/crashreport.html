@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+<h1>Crash Report</h1>
+
+<p>A crash was detected on {{date}} at {{time}}.</p>
+
+<h4>Traceback (most recent call last):</h4>
+
+<div style="width: 800px;">
+    <b>
+    {% for tb in traceback %}
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            <xmp>File {{tb['file']}}, line: {{tb['line']}} in {{tb['module']}}</xmp>
+            <DD>
+                {{tb['code']}}
+            </DD>
+        </DL>
+    {% endfor %}
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px " >
+
+            <DD>
+                {{error}}
+            </DD>
+        </DL>
+    </b>
+</div>
+
+
+</body>
+</html>
