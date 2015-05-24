@@ -148,7 +148,11 @@ class CrashReporter(object):
         """
         Return a string to be used as the email subject line.
         """
-        return 'Crash Report'
+        if self.application_name and self.application_version:
+            return 'Crash Report - {name} (v{version})'.format(name=self.application_name,
+                                                               version=self.application_version)
+        else:
+            return 'Crash Report'
 
     def body(self):
         """
