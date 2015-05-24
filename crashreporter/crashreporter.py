@@ -160,42 +160,25 @@ class CrashReporter(object):
         """
         # Get the last traceback
         tb_last = self._tb.tb_next
-        while tb_last is not None:
-            tb_last = tb_last.tb_next
-        else:
+        if tb_last is None:
             tb_last = self._tb
-        _locals = tb_last.tb_frame.f_locals.copy()
+        else:
+            while tb_last.tb_next is not None:
+                tb_last = tb_last.tb_next
 
         if self.html:
             dt = datetime.datetime.now()
             tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
             error = traceback.format_exception_only(self._etype, self._evalue)[0]
 
-            if 'self' in tb_last.tb_frame.f_locals:
-                _locals = [('self', tb_last.tb_frame.f_locals['self'].__repr__())]
-                scope_obj = getattr(tb_last.tb_frame.f_locals['self'], tb[-1]['module'])
-                scope_lines, ln = inspect.getsourcelines(scope_obj)
-                scope_lines = [(ln + i, 30 * (l.count('    ')-1), l.replace('    ', '')) for i, l in enumerate(scope_lines)]
-            else:
-                _locals = []
-                for k, v in tb_last.tb_frame.f_locals.iteritems():
-                    if k == 'self':
-                        continue
-                    try:
-                        _locals.append((k, v.__repr__()))
-                    except TypeError:
-                        pass
-                scope_lines = []
-                with open(tb_last.tb_frame.f_locals['__file__'], 'r') as _f:
-                    for c, l in enumerate(_f):
-                        if c > tb_last.tb_lineno - self.source_code_line_limit:
-                            scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
+            scope_lines = self._get_scope_source(tb_last)
+            scope_locals = self._get_scope_locals(tb_last)
 
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
                       'traceback': tb,
                       'error': error,
-                      'localvars': _locals,
+                      'localvars': scope_locals,
                       'app_name': self.application_name,
                       'app_version': self.application_version,
                       'source_code': scope_lines
@@ -213,16 +196,21 @@ class CrashReporter(object):
             body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
             body += '\n'.join(traceback.format_exception(self._etype, self._evalue, self._tb))
             body += '\n'
-
+            # Print the source code in the local scope of the error
+            body += 'Source Code:\n\n'
+            scope_lines = self._get_scope_source(tb_last)
+            for ln, indent, line in scope_lines:
+                body += "{ln}.{indent}{line}".format(ln=ln, indent=int(indent / 30. * 4) * ' ', line=line)
+            body += '\n'
             # Print a table of local variables
+            scope_locals = self._get_scope_locals(tb_last)
             limit = 25
             fmt = "{name:<25s}{value:<25s}\n"
             body += '-' * 90 + '\n'
             body += fmt.format(name='Variable', value='Value')
             body += '-' * 90 + '\n'
-            body += fmt.format(name='self', value=_locals.pop('self'))
             count = 0
-            for name, value in _locals.iteritems():
+            for name, value in scope_locals:
                 body += fmt.format(name=name, value=value.__repr__())
                 count += 1
                 if count > limit:
@@ -345,6 +333,33 @@ class CrashReporter(object):
             if great_success:
                 self.logger.info('CrashReporter: Offline reports sent.')
             return great_success
+
+    def _get_scope_source(self, tb):
+        if 'self' in tb.tb_frame.f_locals:
+            scope_obj = getattr(tb.tb_frame.f_locals['self'], traceback.extract_tb(tb)[0][2])
+            scope_lines, ln = inspect.getsourcelines(scope_obj)
+            scope_lines = [(ln + i, 30 * (l.count('    ')-1), l.replace('    ', '')) for i, l in enumerate(scope_lines)]
+        else:
+            scope_lines = []
+            with open(tb.tb_frame.f_locals['__file__'], 'r') as _f:
+                for c, l in enumerate(_f):
+                    if c > tb.tb_lineno - self.source_code_line_limit:
+                        scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
+        return scope_lines
+
+    def _get_scope_locals(self, tb):
+        if 'self' in tb.tb_frame.f_locals:
+            _locals = [('self', tb.tb_frame.f_locals['self'].__repr__())]
+        else:
+            _locals = []
+        for k, v in tb.tb_frame.f_locals.iteritems():
+            if k == 'self':
+                continue
+            try:
+                _locals.append((k, v.__repr__()))
+            except TypeError:
+                pass
+        return _locals
 
     def _write_report(self, path):
         # Write a new report
