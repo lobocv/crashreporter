@@ -155,25 +155,37 @@ class CrashReporter(object):
         """
         # Get the last traceback
         tb_last = self._tb.tb_next
-        while tb_last.tb_next is not None:
+        while tb_last is not None:
             tb_last = tb_last.tb_next
+        else:
+            tb_last = self._tb
         _locals = tb_last.tb_frame.f_locals.copy()
 
         if self.html:
             dt = datetime.datetime.now()
             tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
             error = traceback.format_exception_only(self._etype, self._evalue)[0]
-            scope_obj = getattr(tb_last.tb_frame.f_locals['self'], tb[-1]['module'])
-            scope_lines, ln = inspect.getsourcelines(scope_obj)
-            scope_lines = [(ln + i, 30 * (l.count('    ')-1), l.replace('    ', '')) for i, l in enumerate(scope_lines)]
+
             if 'self' in tb_last.tb_frame.f_locals:
                 _locals = [('self', tb_last.tb_frame.f_locals['self'].__repr__())]
+                scope_obj = getattr(tb_last.tb_frame.f_locals['self'], tb[-1]['module'])
+                scope_lines, ln = inspect.getsourcelines(scope_obj)
+                scope_lines = [(ln + i, 30 * (l.count('    ')-1), l.replace('    ', '')) for i, l in enumerate(scope_lines)]
             else:
                 _locals = []
-            for k, v in tb_last.tb_frame.f_locals.iteritems():
-                if k == 'self':
-                    continue
-                _locals.append((k, v.__repr__()))
+                for k, v in tb_last.tb_frame.f_locals.iteritems():
+                    if k == 'self':
+                        continue
+                    try:
+                        _locals.append((k, v.__repr__()))
+                    except TypeError:
+                        pass
+                scope_lines = []
+                with open(tb_last.tb_frame.f_locals['__file__'], 'r') as _f:
+                    for c, l in enumerate(_f):
+                        if c > tb_last.tb_lineno - 50:
+                            scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
+
 
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
