@@ -6,7 +6,8 @@ from crashreporter import __version__
 setup(
     name='crashreporter',
     packages=['crashreporter'],  # this must be the same as the name above
-    data_files=[('crashreporter', ['crashreporter/crashreporter.html'])],
+    package_dir={'crashreporter': 'crashreporter'},
+    package_data={'crashreporter': ['*.html']},
     version=__version__,
     description='Track and send crash reports by email or FTP',
     author='Calvin Lobo',
