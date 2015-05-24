@@ -49,7 +49,11 @@
         <ol start="{{source_code[0][0]}}">
             <li style="padding-left"> {{source_code[0][2]}}</li>
             {% for n, indent, line in source_code[1:] %}
-                <li style="padding-left: {{indent}}px;">{{line}}</li>
+                {% if n ==traceback[-1]['line'] %}
+                    <li style="background-color:#BB0000; padding-left: {{indent}}px;">{{line}}</li>
+                {% else %}
+                    <li style="padding-left: {{indent}}px;">{{line}}</li>
+                {% endif %}
             {% endfor %}
         </ol>
     </div>
