@@ -37,10 +37,11 @@ class CrashReporter(object):
     :param html: Create HTML reports (True) or plain text (False).
 
     """
-    report_template = "crashreport%02d.txt"
+    _report_name = "crashreport%02d"
     application_name = None
     application_version = None
     source_code_line_limit = 50
+    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
 
     def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
         self.html = html
@@ -184,7 +185,7 @@ class CrashReporter(object):
                       'source_code': scope_lines
                       }
 
-            with open('./crashreporter/crashreport.html', 'r') as _f:
+            with open(self.html_template, 'r') as _f:
                 template = jinja2.Template(_f.read())
             html_body = template.render(**fields)
             with open('report.html', 'w') as _g:
@@ -246,12 +247,13 @@ class CrashReporter(object):
             self.stop_watcher()
             return False
 
-        tmp = 'ftp_report.txt'
+        tmp = 'ftp_report'
         self._write_report(tmp)
 
         ftp.cwd(info['path'])
         with open(tmp, 'rb') as _f:
-            new_filename = self.report_template % (len(ftp.nlst()) + 1)
+            ext = '.html' if self.html else '.txt'
+            new_filename = self._report_name % (len(ftp.nlst()) + 1) + ext
             ftp.storlines('STOR %s' % new_filename, _f)
             self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
             return True
@@ -273,7 +275,8 @@ class CrashReporter(object):
         ftp.cwd(info['path'])
         for report in self._get_offline_reports():
             with open(report, 'rb') as _f:
-                new_filename = self.report_template % (len(ftp.nlst()) + 1)
+                ext = os.path.splitext(report)[1]
+                new_filename = self._report_name % (len(ftp.nlst()) + 1) + ext
                 ftp.storlines('STOR %s' % new_filename, _f)
         self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
         return True
@@ -321,15 +324,16 @@ class CrashReporter(object):
     def _smtp_send_offline_reports(self):
         offline_reports = self._get_offline_reports()
         if offline_reports:
+            spacer = '<br>' if self.html else '-------------------------------------------------\n'
             # Add the body of the message
             body = 'Here is a list of crash reports that were stored offline.\n'
-            body += '-------------------------------------------------\n'
+            body += spacer
             for report in offline_reports:
                 with open(report, 'r') as _f:
                     text = _f.readlines()
                     body += ''.join(text)
-                    body += '-------------------------------------------------\n'
-            great_success = self._sendmail(self.subject(), body)
+                    body += spacer
+            great_success = self._sendmail(self.subject(), body, html=self.html)
             if great_success:
                 self.logger.info('CrashReporter: Offline reports sent.')
             return great_success
@@ -363,6 +367,7 @@ class CrashReporter(object):
 
     def _write_report(self, path):
         # Write a new report
+        path = os.path.splitext(path)[0] + ('.html' if self.html else '.txt')
         with open(path, 'w') as _f:
             _f.write(self.body())
 
@@ -373,17 +378,18 @@ class CrashReporter(object):
         """
         offline_reports = self._get_offline_reports()
         if offline_reports:
-            # Increment the name of all existing reports
+            # Increment the name of all existing reports 1 --> 2, 2 --> 3 etc.
             for ii, report in enumerate(reversed(offline_reports)):
-                n = int(report[-2:])
-                new_name = os.path.join(self.report_dir, self.report_template % (n + 1))
+                rpath, ext = os.path.splitext(report)
+                n = int(rpath[-2:])
+                new_name = os.path.join(self.report_dir, self._report_name % (n + 1)) + ext
                 shutil.copy2(report, new_name)
             os.remove(report)
             # Delete the oldest report
             if len(offline_reports) >= self.offline_report_limit:
-                oldest = os.path.join(self.report_dir, self.report_template % (self.offline_report_limit + 1))
+                oldest = glob.glob(os.path.join(self.report_dir, self._report_name % (self.offline_report_limit+1) + '*'))[0]
                 os.remove(oldest)
-        new_report_path = os.path.join(self.report_dir, self.report_template % 1)
+        new_report_path = os.path.join(self.report_dir, self._report_name % 1)
         self._write_report(new_report_path)
 
     def _get_offline_reports(self):
