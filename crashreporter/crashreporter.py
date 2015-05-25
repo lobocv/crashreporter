@@ -247,14 +247,15 @@ class CrashReporter(object):
             self.stop_watcher()
             return False
 
-        tmp = 'ftp_report'
-        self._write_report(tmp)
+        tmp_file = 'ftp_report'
+        tmp_path = self._write_report(tmp_file)
 
         ftp.cwd(info['path'])
-        with open(tmp, 'rb') as _f:
+        with open(tmp_path, 'rb') as _f:
             ext = '.html' if self.html else '.txt'
             new_filename = self._report_name % (len(ftp.nlst()) + 1) + ext
             ftp.storlines('STOR %s' % new_filename, _f)
+            os.remove(tmp_path)
             self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
             return True
 
@@ -370,6 +371,7 @@ class CrashReporter(object):
         path = os.path.splitext(path)[0] + ('.html' if self.html else '.txt')
         with open(path, 'w') as _f:
             _f.write(self.body())
+        return path
 
     def _save_report(self):
         """
