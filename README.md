@@ -83,6 +83,9 @@ fail, the crash is written to file in `report_dir`. The next time the script is 
 any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
 are deleted.
 
+Attributes
+----------
+
 The CrashReporter has several attributes that can be changed:
  
     offline_report_limit:   
