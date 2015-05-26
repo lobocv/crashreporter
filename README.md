@@ -103,6 +103,3 @@ The CrashReporter has several attributes that can be changed:
     
 Example Report
 --------------
-
-
-![alt tag](https://raw.github.com/lobocv/crashreporter/readme/example.png)
