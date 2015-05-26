@@ -49,20 +49,25 @@ Person objects, one with an age and one without. When we attempt to combine thei
         return person_a.age + person_b.age
     
     if __name__ == '__main__':
-        cr = CrashReporter(report_dir='/home/calvin/crashreporter', check_interval=3600, html=True)
+        cr = CrashReporter(report_dir='/home/calvin/crashreporter',
+                           check_interval=3600,
+                            html=True)
+        cr.application_name = 'My App'
+        cr.application_version = '1.1.350'
+                                    
         # Configure the crash reporter to email myaddress@gmail.com whenever a crash is detected
         cr.setup_smtp(user="crashreporter@gmail.com",
                       passwd='12345678',
                       recipients=['myaddress@gmail.com'],
                       host="smtp.gmail.com",
                       port=587)
-        # Configure the crash reporter to upload crash reports to ftp.example.com whenever a crash is detected
+                      
+        # Configure the crash reporter to upload crash reports 
+        # to ftp.example.com whenever a crash is detected
         cr.setup_ftp(host='ftp.example.com',
                      user='user',
                      passwd='12345',
                      path='/myapp/crashreports')
-        cr.application_name = 'My App'
-        cr.application_version = '1.1.350'
     
         with cr:
             calvin = Person('calvin', age=25)
@@ -80,7 +85,8 @@ are deleted.
 The CrashReporter has several attributes that can be changed:
  
     offline_report_limit:   
-            The maximum number of offline reports to save before overwriting the oldest report.
+            The maximum number of offline reports to save before overwriting 
+            the oldest report.
             
     application_version:    
             Application version as a string to be included in the report.
@@ -89,7 +95,8 @@ The CrashReporter has several attributes that can be changed:
             Application name as a string to be included in the report.
             
     source_code_line_limit: 
-            The number of source code lines to include before and after the error as a tuple (before, after) 
+            The number of source code lines to include before and after the error 
+            as a tuple (before, after) 
 
 
     
