@@ -21,3 +21,7 @@ To install:
     
     pip install crashreporter
     
+Example
+=======
+
+![alt tag](https://raw.github.com/lobocv/crashreporter/readme/example.png)
