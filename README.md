@@ -33,9 +33,6 @@ Person objects, one with an age and one without. When we attempt to combine thei
 
     TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
 
-When the crash occurs, the crash reporter will attempt to send it by email or upload it to the FTP server, if both methods
-fail, the crash is written to file in `report_dir`. The next time the script is run, the crash reporter will check for
-any offline reports and attempt to send them every `check_interval` seconds. 
 
 ```python
 
@@ -53,9 +50,13 @@ any offline reports and attempt to send them every `check_interval` seconds.
     
     if __name__ == '__main__':
         cr = CrashReporter(report_dir='/home/calvin/crashreporter', check_interval=3600, html=True)
-        cr.setup_smtp(user="crashreporter@gmail.com", passwd='12345678',
-                      recipients=['myaddress@gmail.com'], host="smtp.gmail.com", port=587)
-    
+        # Configure the crash reporter to email myaddress@gmail.com whenever a crash is detected
+        cr.setup_smtp(user="crashreporter@gmail.com",
+                      passwd='12345678',
+                      recipients=['myaddress@gmail.com'],
+                      host="smtp.gmail.com",
+                      port=587)
+        # Configure the crash reporter to upload crash reports to ftp.example.com whenever a crash is detected
         cr.setup_ftp(host='ftp.example.com',
                      user='user',
                      passwd='12345',
@@ -70,6 +71,27 @@ any offline reports and attempt to send them every `check_interval` seconds.
 
 
 ```
+    
+When the crash occurs, the crash reporter will attempt to send it by email or upload it to the FTP server, if both methods
+fail, the crash is written to file in `report_dir`. The next time the script is run, the crash reporter will look for
+any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
+are deleted.
+
+The CrashReporter has several attributes that can be changed:
+ 
+    offline_report_limit:   
+            The maximum number of offline reports to save before overwriting the oldest report.
+            
+    application_version:    
+            Application version as a string to be included in the report.
+            
+    application_name:       
+            Application name as a string to be included in the report.
+            
+    source_code_line_limit: 
+            The number of source code lines to include before and after the error as a tuple (before, after) 
+
+
     
 Example Report
 --------------

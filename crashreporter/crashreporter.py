@@ -45,8 +45,10 @@ class CrashReporter(object):
     application_version = None
     ''' The number of source code lines to include before and after the error occurs'''
     source_code_line_limit = (25, 25)
+    ''' Number of offline reports to save.'''
+    offline_report_limit = 10
 
-    def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
+    def __init__(self, report_dir=None, html=False, check_interval=5*60, logger=None):
         self.html = html
         self._smtp = None
         self._ftp = None
@@ -55,7 +57,6 @@ class CrashReporter(object):
         # Setup the directory used to store offline crash reports
         self.report_dir = report_dir
         self.check_interval = check_interval
-        self.offline_report_limit = offline_report_limit
         self._watcher = None
         self._watcher_enabled = False
         if report_dir:
