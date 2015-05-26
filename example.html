@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+<div style="width: 800px;">
+    <h2>
+        
+            
+                My App (v1.1.0)
+            
+
+        
+    </h2>
+<hr>
+    <p>A crash was detected on 25 May 2015 at 08:39 PM.</p>
+</div>
+
+<div style="width: 800px;">
+    <h4>Traceback (most recent call last):</h4>
+    <b>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            File /home/calvin/lobocv/crashreporter/example.py, line: 36 in &lt;module&gt;
+            <DD>
+                combine_ages(calvin, bob)
+            </DD>
+        </DL>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            File /home/calvin/lobocv/crashreporter/example.py, line: 15 in combine_ages
+            <DD>
+                return person_a.age + person_b.age
+            </DD>
+        </DL>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px " >
+
+            <DD>
+                TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
+
+            </DD>
+        </DL>
+    </b>
+
+    <hr>
+
+    <h4>Source Code</h4>
+    <div style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;">
+        <ol start="1">
+            <li style="padding-left"> __author__ = 'calvin'
+</li>
+            
+                
+                    <li style="padding-left: -30px;">import time
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">from crashreporter import CrashReporter
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">class Person(object):
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">def __init__(self, name, age=None):
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">self.name = name
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">self.age = age
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">def combine_ages(person_a, person_b):
+</li>
+                
+            
+                
+                    <li style="background-color:#BB0000; padding-left: 0px;">return person_a.age + person_b.age
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">if __name__ == '__main__':
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr = CrashReporter(report_dir='/home/calvin/crashreporter', check_interval=5, html=True)
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr.setup_smtp(user="crashreporter@gmail.com", passwd='12345678',
+</li>
+                
+            
+                
+                    <li style="padding-left: 90px;">   recipients=['myaddress@gmail.com'], host="smtp.gmail.com", port=587)
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr.setup_ftp(host='ftp.example.com',
+</li>
+                
+            
+                
+                    <li style="padding-left: 90px;"> user='user',
+</li>
+                
+            
+                
+                    <li style="padding-left: 90px;"> passwd='12345',
+</li>
+                
+            
+                
+                    <li style="padding-left: 90px;"> path='/myapp/crashreports')
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr.application_name = 'My App'
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr.application_version = '1.1.0'
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">with cr:
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">calvin = Person('calvin', age=25)
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">bob = Person('bob')
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">combine_ages(calvin, bob)
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;"># t = SomeClass()
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">#
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;"># c = 1
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;"># while c != 0:
+</li>
+                
+            
+        </ol>
+    </div>
+
+    <hr>
+
+    <h4>Local Variables in the scope of combine_ages</h4>
+    <table border="1" style="width:800px">
+        
+            <tr>
+                <td style="width:30%">person_b</td>
+                <td>&lt;__main__.Person object at 0x7fb9e832de90&gt;</td>
+            </tr>
+        
+            <tr>
+                <td style="width:30%">person_a</td>
+                <td>&lt;__main__.Person object at 0x7fb9e832df10&gt;</td>
+            </tr>
+        
+    </table>
+
+</div>
+
+</body>
+</html>
