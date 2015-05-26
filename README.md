@@ -55,7 +55,8 @@ Person objects, one with an age and one without. When we attempt to combine thei
         cr.application_name = 'My App'
         cr.application_version = '1.1.350'
                                     
-        # Configure the crash reporter to email myaddress@gmail.com whenever a crash is detected
+        # Configure the crash reporter to email myaddress@gmail.com 
+        # whenever a crash is detected
         cr.setup_smtp(user="crashreporter@gmail.com",
                       passwd='12345678',
                       recipients=['myaddress@gmail.com'],
