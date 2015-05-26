@@ -40,7 +40,8 @@ class CrashReporter(object):
     _report_name = "crashreport%02d"
     application_name = None
     application_version = None
-    source_code_line_limit = 50
+    ''' The number of source code lines to include before and after the error occurs'''
+    source_code_line_limit = (25, 25)
     html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
 
     def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
@@ -172,8 +173,8 @@ class CrashReporter(object):
             tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
             error = traceback.format_exception_only(self._etype, self._evalue)[0]
 
-            scope_lines = self._get_scope_source(tb_last)
-            scope_locals = self._get_scope_locals(tb_last)
+            scope_lines = self._get_source()
+            scope_locals = self._get_locals(tb_last)
 
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
@@ -199,12 +200,12 @@ class CrashReporter(object):
             body += '\n'
             # Print the source code in the local scope of the error
             body += 'Source Code:\n\n'
-            scope_lines = self._get_scope_source(tb_last)
+            scope_lines = self._get_source(tb_last)
             for ln, indent, line in scope_lines:
                 body += "{ln}.{indent}{line}".format(ln=ln, indent=int(indent / 30. * 4) * ' ', line=line)
             body += '\n'
             # Print a table of local variables
-            scope_locals = self._get_scope_locals(tb_last)
+            scope_locals = self._get_locals(tb_last)
             limit = 25
             fmt = "{name:<25s}{value:<25s}\n"
             body += '-' * 90 + '\n'
@@ -339,20 +340,18 @@ class CrashReporter(object):
                 self.logger.info('CrashReporter: Offline reports sent.')
             return great_success
 
-    def _get_scope_source(self, tb):
-        if 'self' in tb.tb_frame.f_locals:
-            scope_obj = getattr(tb.tb_frame.f_locals['self'], traceback.extract_tb(tb)[0][2])
-            scope_lines, ln = inspect.getsourcelines(scope_obj)
-            scope_lines = [(ln + i, 30 * (l.count('    ')-1), l.replace('    ', '')) for i, l in enumerate(scope_lines)]
-        else:
-            scope_lines = []
-            with open(tb.tb_frame.f_locals['__file__'], 'r') as _f:
-                for c, l in enumerate(_f):
-                    if c > tb.tb_lineno - self.source_code_line_limit:
-                        scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
+    def _get_source(self):
+        scope_lines = []
+        _file, line_num, func, text = traceback.extract_tb(self._tb)[-1]
+        start = line_num - self.source_code_line_limit[0]
+        end = line_num + self.source_code_line_limit[1]
+        with open(_file, 'r') as _f:
+            for c, l in enumerate(_f):
+                if start <= c + 1 <= end:
+                    scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
         return scope_lines
 
-    def _get_scope_locals(self, tb):
+    def _get_locals(self, tb):
         if 'self' in tb.tb_frame.f_locals:
             _locals = [('self', tb.tb_frame.f_locals['self'].__repr__())]
         else:
