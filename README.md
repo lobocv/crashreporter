@@ -33,7 +33,7 @@ Person objects, one with an age and one without. When we attempt to combine thei
 
     TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
 
-When the crash occurs, the crash reporter will attempt to send it by email or upload it to the FTP server, both methods
+When the crash occurs, the crash reporter will attempt to send it by email or upload it to the FTP server, if both methods
 fail, the crash is written to file in `report_dir`. The next time the script is run, the crash reporter will check for
 any offline reports and attempt to send them every `check_interval` seconds. 
 

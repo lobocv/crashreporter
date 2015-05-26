@@ -38,11 +38,13 @@ class CrashReporter(object):
 
     """
     _report_name = "crashreport%02d"
+    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
+    ''' Application name as a string to be included in the report'''
     application_name = None
+    ''' Application version as a string to be included in the report'''
     application_version = None
     ''' The number of source code lines to include before and after the error occurs'''
     source_code_line_limit = (25, 25)
-    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
 
     def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
         self.html = html
