@@ -9,8 +9,8 @@ import smtplib
 import time
 import logging
 import ftplib
-import inspect
 import jinja2
+import ConfigParser
 
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
@@ -34,28 +34,38 @@ class CrashReporter(object):
     :param check_interval: How often the to attempt to send offline reports
     :param logger: Optional logger to use.
     :param offline_report_limit: Number of offline reports to save.
+    :param config: Path to configuration file that defines the arguments to setup_smtp and setup_ftp. The file has the
+                   format of a ConfigParser file with sections [SMTP] and [FTP]
     :param html: Create HTML reports (True) or plain text (False).
 
     """
     _report_name = "crashreport%02d"
+    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
+    ''' Application name as a string to be included in the report'''
     application_name = None
+    ''' Application version as a string to be included in the report'''
     application_version = None
     ''' The number of source code lines to include before and after the error occurs'''
     source_code_line_limit = (25, 25)
-    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
+    ''' Number of offline reports to save.'''
+    offline_report_limit = 10
 
-    def __init__(self, report_dir=None, offline_report_limit=10, html=False, check_interval=5*60, logger=None):
+    def __init__(self, report_dir=None, html=False, check_interval=5*60, config='', logger=None):
         self.html = html
-        self._smtp = None
-        self._ftp = None
         self._enabled = True
         self.logger = logger if logger else logging.getLogger(__name__)
         # Setup the directory used to store offline crash reports
         self.report_dir = report_dir
         self.check_interval = check_interval
-        self.offline_report_limit = offline_report_limit
         self._watcher = None
         self._watcher_enabled = False
+
+        if os.path.isfile(config):
+            self.load_configuration(config)
+        else:
+            self._smtp = None
+            self._ftp = None
+
         if report_dir:
             if os.path.exists(report_dir):
                 self.start_watcher()
@@ -145,6 +155,25 @@ class CrashReporter(object):
                     self._save_report()
         else:
             self.logger.info('CrashReporter: No crashes detected.')
+
+    def load_configuration(self, config):
+        cfg = ConfigParser.ConfigParser()
+
+        with open(config, 'r') as _f:
+            cfg.readfp(_f)
+            if cfg.has_section('SMTP'):
+                self.setup_smtp(**dict(cfg.items('SMTP')))
+                if 'port' in self._smtp:
+                    self._smtp['port'] = int(self._smtp['port'])
+                if 'recipients' in self._smtp:
+                    self._smtp['recipients'] = self._smtp['recipients'].split(',')
+
+            if cfg.has_section('FTP'):
+                self.setup_ftp(**dict(cfg.items('FTP')))
+                if 'timeout' in self._ftp:
+                    self._ftp['timeout'] = int(self._ftp['timeout'])
+                if 'port' in self._ftp:
+                    self._ftp['port'] = int(self._ftp['port'])
 
     def subject(self):
         """
