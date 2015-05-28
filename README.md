@@ -86,8 +86,8 @@ are deleted.
 Configuration File
 ------------------
 If you don't want to keep your SMTP and FTP credentials in your scripts you can alternatively use a configuration file.
-Simple pass the path to the configuration file as the `config` argument in CrashReporter or call the `load_configuration`
-method. The format of the configuration file should have two sections, SMTP and FTP. Under each section are parameters
+Simple pass the path to the configuration file as the `config` argument in CrashReporter or call the `load_configuration(path)`
+method with the path. The format of the configuration file should have two sections, SMTP and FTP. Under each section are parameters
 that are passed to the setup_smtp and setup_ftp functions:
 
 Example:
