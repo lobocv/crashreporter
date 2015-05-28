@@ -83,6 +83,31 @@ fail, the crash is written to file in `report_dir`. The next time the script is 
 any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
 are deleted.
 
+Configuration File
+------------------
+If you don't want to keep your SMTP and FTP credentials in your scripts you can alternatively use a configuration file.
+Simple pass the path to the configuration file as the `config` argument in CrashReporter or call the `load_configuration`
+method. The format of the configuration file should have two sections, SMTP and FTP. Under each section are parameters
+that are passed to the setup_smtp and setup_ftp functions:
+
+Example:
+
+    [SMTP]
+    user = mycrashreporter@gmail.com
+    passwd = mypasswordissupersecret
+    recipients = developer1@gmail.com, developer2@gmail.com
+    host = smtp.gmail.com
+    port = 587
+    
+    [FTP]
+    user = user
+    passwd = 12345
+    host = ftp.example.com
+    path = ./myapp/crashreports
+    port = 2456
+    
+
+
 Attributes
 ----------
 
@@ -104,6 +129,8 @@ The CrashReporter has several attributes that can be changed:
 
 
     
+    
+
 Example Report
 --------------
 
