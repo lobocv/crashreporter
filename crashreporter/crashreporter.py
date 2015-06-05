@@ -11,6 +11,7 @@ import logging
 import ftplib
 import jinja2
 import ConfigParser
+import re
 
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
@@ -204,6 +205,7 @@ class CrashReporter(object):
 
             scope_lines = self._get_source()
             scope_locals = self._get_locals(tb_last)
+            scope_locals.extend(self._get_referenced_variables(tb_last))
 
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
@@ -380,11 +382,33 @@ class CrashReporter(object):
                     scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
         return scope_lines
 
+    def _get_referenced_variables(self, tb_last):
+        expr = r'[_A-Za-z]{1}[_a-z]*\.[A-Za-z_]*[^, \.()]*'
+        error_line = traceback.extract_tb(tb_last)[-1][3]
+        lookups = set(re.findall(expr, error_line))
+        values = {}
+        for ref in lookups:
+            cannot_find = False
+            objs = ref.split('.')
+            scope = tb_last.tb_frame.f_locals
+            for obj in objs:
+                if cannot_find:
+                    continue
+                try:
+                    if isinstance(scope, dict):
+                        scope = scope[obj]
+                    else:
+                        scope = scope.__dict__[obj]
+                except KeyError:
+                    cannot_find = True
+
+            if not cannot_find:
+                values[ref] = scope
+        return values.items()
+
     def _get_locals(self, tb):
-        if 'self' in tb.tb_frame.f_locals:
-            _locals = [('self', tb.tb_frame.f_locals['self'].__repr__())]
-        else:
-            _locals = []
+        # Ensure self is the first in the list
+        _locals = [('self', tb.tb_frame.f_locals['self'].__repr__())] if 'self' in tb.tb_frame.f_locals else []
         for k, v in tb.tb_frame.f_locals.iteritems():
             if k == 'self':
                 continue
