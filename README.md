@@ -34,6 +34,8 @@ Person objects, one with an age and one without. When we attempt to combine thei
     TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
 
 
+example.py
+
 ```python
 
     from crashreporter import CrashReporter
@@ -68,7 +70,7 @@ Person objects, one with an age and one without. When we attempt to combine thei
         cr.setup_ftp(host='ftp.example.com',
                      user='user',
                      passwd='12345',
-                     path='/myapp/crashreports')
+                     path='./myapp/crashreports')
     
         with cr:
             calvin = Person('calvin', age=25)
@@ -82,6 +84,19 @@ When the crash occurs, the crash reporter will attempt to send it by email or up
 fail, the crash is written to file in `report_dir`. The next time the script is run, the crash reporter will look for
 any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
 are deleted.
+
+To get crash reports for you entire script, you can wrap your script in a main() function and have the crash reporter
+envelope it, like so:
+
+```python
+
+    from myscript import main
+    
+    with cr:
+        main()
+    
+        
+```
 
 Configuration File
 ------------------
