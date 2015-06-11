@@ -1,5 +1,6 @@
 __author__ = 'calvin'
 
+import sys
 import traceback
 import os
 import glob
@@ -18,6 +19,8 @@ from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
 
+# Store this function so we can set it back if the CrashReporter is deactivated
+sys_excepthook = sys.excepthook
 
 class CrashReporter(object):
     """
@@ -49,28 +52,24 @@ class CrashReporter(object):
     source_code_line_limit = (25, 25)
     ''' Number of offline reports to save.'''
     offline_report_limit = 10
+    active = False
 
-    def __init__(self, report_dir=None, html=False, check_interval=5*60, config='', logger=None):
+    def __init__(self, report_dir=None, html=False, check_interval=5*60, config='', logger=None, activate=True):
         self.html = html
-        self._enabled = True
         self.logger = logger if logger else logging.getLogger(__name__)
         # Setup the directory used to store offline crash reports
         self.report_dir = report_dir
         self.check_interval = check_interval
         self._watcher = None
         self._watcher_enabled = False
-
+        # Load the configuration from a file if specified
         if os.path.isfile(config):
             self.load_configuration(config)
         else:
             self._smtp = None
             self._ftp = None
-
-        if report_dir:
-            if os.path.exists(report_dir):
-                self.start_watcher()
-            else:
-                os.makedirs(report_dir)
+        if activate:
+            self.enable()
 
     def setup_smtp(self, host, port, user, passwd, recipients, **kwargs):
         """
@@ -103,27 +102,39 @@ class CrashReporter(object):
         """
         Enable the crash reporter. CrashReporter is defaulted to be enabled on creation.
         """
-        self.logger.info('CrashReporter: Enabled')
-        self._enabled = True
+        if not CrashReporter.active:
+            CrashReporter.active = True
+            sys.excepthook = self.exception_handler
+            self.logger.info('CrashReporter: Enabled')
+            if self.report_dir:
+                if os.path.exists(self.report_dir):
+                    self.start_watcher()
+                else:
+                    os.makedirs(self.report_dir)
 
     def disable(self):
         """
         Disable the crash reporter. No reports will be sent or saved.
         """
-        self.logger.info('CrashReporter: Disabled')
-        self._enabled = False
-        self.stop_watcher()
+        if CrashReporter.active:
+            sys.excepthook = sys_excepthook
+            CrashReporter.active = False
+            self.stop_watcher()
+            self.logger.info('CrashReporter: Disabled')
 
     def start_watcher(self):
         """
         Start the watcher that periodically checks for offline reports and attempts to upload them.
         """
-        if self._get_offline_reports():
-            self.logger.info('CrashReporter: Starting watcher.')
-            self._watcher = Thread(target=self._watcher_thread, name='offline_reporter')
-            self._watcher.setDaemon(True)
+        if self._watcher and self._watcher.is_alive:
             self._watcher_enabled = True
-            self._watcher.start()
+        else:
+            if self._get_offline_reports():
+                self.logger.info('CrashReporter: Starting watcher.')
+                self._watcher = Thread(target=self._watcher_thread, name='offline_reporter')
+                self._watcher.setDaemon(True)
+                self._watcher_enabled = True
+                self._watcher.start()
 
     def stop_watcher(self):
         """
@@ -133,11 +144,8 @@ class CrashReporter(object):
             self._watcher_enabled = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
-    def __enter__(self):
-        self.enable()
-
-    def __exit__(self, etype, evalue, tb):
-        if self._enabled:
+    def exception_handler(self, etype, evalue, tb):
+        if CrashReporter.active:
             if etype:
                 self._etype = etype
                 self._evalue = evalue
@@ -155,6 +163,9 @@ class CrashReporter(object):
                     self._save_report()
         else:
             self.logger.info('CrashReporter: No crashes detected.')
+
+        # Call the default exception hook
+        sys_excepthook(etype, evalue, tb)
 
     def load_configuration(self, config):
         cfg = ConfigParser.ConfigParser()
@@ -443,4 +454,5 @@ class CrashReporter(object):
 
         if great_success:
             self.delete_offline_reports()
+        self._watcher = None
         self.logger.info('CrashReporter: Watcher stopped.')
