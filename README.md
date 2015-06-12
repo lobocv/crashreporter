@@ -26,7 +26,7 @@ Usage
 -----
     
 Implementing the crash reporter is easy. Just create a CrashReporter object. Configure the SMTP or FTP accounts for 
-uploading of reports (optional) and then wrap your code in the context manager of the crash reporter.
+uploading of reports (optional) and you are good to go!
 
 In the following example, we wil create a Person class that has an optional age  attribute. We will then create two
 Person objects, one with an age and one without. When we attempt to combine their ages we get the following error:
@@ -51,9 +51,12 @@ example.py
         return person_a.age + person_b.age
     
     if __name__ == '__main__':
+        # The crash reporter will automatically start working one the instance is created. You can stop it from starting
+        # automatically by setting the activate argument to False (default is True).
         cr = CrashReporter(report_dir='/home/calvin/crashreporter',
                            check_interval=3600,
-                            html=True)
+                           html=True,
+                           activate=True)
         cr.application_name = 'My App'
         cr.application_version = '1.1.350'
                                     
@@ -72,10 +75,9 @@ example.py
                      passwd='12345',
                      path='./myapp/crashreports')
     
-        with cr:
-            calvin = Person('calvin', age=25)
-            bob = Person('bob')
-            combine_ages(calvin, bob)
+        calvin = Person('calvin', age=25)
+        bob = Person('bob')
+        combine_ages(calvin, bob)   # This will raise an error
 
 
 ```
