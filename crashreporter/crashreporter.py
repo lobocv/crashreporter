@@ -400,7 +400,7 @@ class CrashReporter(object):
             if k == 'self':
                 continue
             try:
-                _locals.append((k, v.__repr__()))
+                _locals.append((k, repr(v)))
             except TypeError:
                 pass
         return _locals
