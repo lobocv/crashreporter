@@ -51,12 +51,16 @@ example.py
         return person_a.age + person_b.age
     
     if __name__ == '__main__':
-        # The crash reporter will automatically start working one the instance is created. You can stop it from starting
-        # automatically by setting the activate argument to False (default is True).
+        # The crash reporter will automatically start working once
+        # the instance is created. You can stop it from starting
+        # on creation by setting the activate argument
+        # to False (default is True).
         cr = CrashReporter(report_dir='/home/calvin/crashreporter',
                            check_interval=3600,
                            html=True,
                            activate=True)
+                           
+        # Additional (optional) information for the report 
         cr.application_name = 'My App'
         cr.application_version = '1.1.350'
                                     
@@ -75,6 +79,8 @@ example.py
                      passwd='12345',
                      path='./myapp/crashreports')
     
+        # Rest of the script begins here. Any crashes from this point on are reported.
+            
         calvin = Person('calvin', age=25)
         bob = Person('bob')
         combine_ages(calvin, bob)   # This will raise an error
