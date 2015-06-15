@@ -93,18 +93,6 @@ fail, the crash is written to file in `report_dir`. The next time the script is 
 any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
 are deleted.
 
-To get crash reports for you entire script, you can wrap your script in a main() function and have the crash reporter
-envelope it, like so:
-
-```python
-
-    from myscript import main
-    
-    with cr:
-        main()
-    
-        
-```
 
 Configuration File
 ------------------
