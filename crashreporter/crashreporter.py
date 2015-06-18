@@ -19,8 +19,10 @@ from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
 
+
 # Store this function so we can set it back if the CrashReporter is deactivated
 sys_excepthook = sys.excepthook
+
 
 class CrashReporter(object):
     """
@@ -62,6 +64,10 @@ class CrashReporter(object):
         self.check_interval = check_interval
         self._watcher = None
         self._watcher_enabled = False
+        self._etype = None
+        self._evalue = None
+        self._tb = None
+        self._call_count = 0
         # Load the configuration from a file if specified
         if os.path.isfile(config):
             self.load_configuration(config)
@@ -146,6 +152,13 @@ class CrashReporter(object):
             self.logger.info('CrashReporter: Stopping watcher.')
 
     def exception_handler(self, etype, evalue, tb):
+        self._call_count += 1
+        if self._call_count > 1:
+            # With some debuggers (such as the PyCharm debugger) the value of sys.excepthook is set ahead of the
+            # CrashReporter. This causes recursive behaviour when calling sys_excepthook and will continually upload
+            # reports. To prevent from spamming, only call this function once.
+            return
+
         if CrashReporter.active:
             if etype:
                 self._etype = etype
