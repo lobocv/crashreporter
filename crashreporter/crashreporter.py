@@ -82,6 +82,7 @@ class CrashReporter(object):
         """
         self._smtp = kwargs
         self._smtp.update({'host': host, 'port': port, 'user': user, 'passwd': passwd, 'recipients': recipients})
+        self._smtp['from'] = kwargs.get('from', user)
 
     def setup_ftp(self, host, user, passwd, path, port=21, acct='', timeout=5, **kwargs):
         """
@@ -330,7 +331,7 @@ class CrashReporter(object):
             msg['To'] = ', '.join(smtp['recipients'])
         else:
             msg['To'] = smtp['recipients']
-        msg['From'] = smtp['user']
+        msg['From'] = smtp['from']
         msg['Subject'] = subject
 
         # Add the body of the message
@@ -355,7 +356,7 @@ class CrashReporter(object):
             ms.starttls()
             ms.ehlo()
             ms.login(smtp['user'], smtp['passwd'])
-            ms.sendmail(smtp['user'], smtp['recipients'], msg.as_string())
+            ms.sendmail(smtp['from'], smtp['recipients'], msg.as_string())
             ms.close()
         except Exception as e:
             self.logger.error('CrashReporter: %s' % e)
