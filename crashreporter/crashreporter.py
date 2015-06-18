@@ -161,8 +161,8 @@ class CrashReporter(object):
                 # If both FTP and email sending fails, save the report
                 if not great_success:
                     self._save_report()
-        else:
-            self.logger.info('CrashReporter: No crashes detected.')
+            else:
+                self.logger.info('CrashReporter: No crashes detected.')
 
         # Call the default exception hook
         sys_excepthook(etype, evalue, tb)
@@ -253,7 +253,7 @@ class CrashReporter(object):
             body += '-' * 90 + '\n'
             count = 0
             for name, value in scope_locals:
-                body += fmt.format(name=name, value=value.__repr__())
+                body += fmt.format(name=name, value=repr(value))
                 count += 1
                 if count > limit:
                     break
@@ -393,7 +393,7 @@ class CrashReporter(object):
 
     def _get_locals(self, tb):
         if 'self' in tb.tb_frame.f_locals:
-            _locals = [('self', tb.tb_frame.f_locals['self'].__repr__())]
+            _locals = [('self', repr(tb.tb_frame.f_locals['self']))]
         else:
             _locals = []
         for k, v in tb.tb_frame.f_locals.iteritems():
