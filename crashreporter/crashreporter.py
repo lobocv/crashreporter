@@ -20,9 +20,6 @@ from email.mime.text import MIMEText
 from email import encoders
 
 
-# Store this function so we can set it back if the CrashReporter is deactivated
-sys_excepthook = sys.excepthook
-
 
 class CrashReporter(object):
     """
@@ -67,7 +64,7 @@ class CrashReporter(object):
         self._etype = None
         self._evalue = None
         self._tb = None
-        self._call_count = 0
+        self._excepthook = None
         # Load the configuration from a file if specified
         if os.path.isfile(config):
             self.load_configuration(config)
@@ -111,6 +108,8 @@ class CrashReporter(object):
         """
         if not CrashReporter.active:
             CrashReporter.active = True
+            # Store this function so we can set it back if the CrashReporter is deactivated
+            self._excepthook = sys.excepthook
             sys.excepthook = self.exception_handler
             self.logger.info('CrashReporter: Enabled')
             if self.report_dir:
@@ -124,8 +123,9 @@ class CrashReporter(object):
         Disable the crash reporter. No reports will be sent or saved.
         """
         if CrashReporter.active:
-            sys.excepthook = sys_excepthook
             CrashReporter.active = False
+            # Restore the original excepthook
+            sys.excepthook = self._excepthook
             self.stop_watcher()
             self.logger.info('CrashReporter: Disabled')
 
@@ -152,13 +152,6 @@ class CrashReporter(object):
             self.logger.info('CrashReporter: Stopping watcher.')
 
     def exception_handler(self, etype, evalue, tb):
-        self._call_count += 1
-        if self._call_count > 1:
-            # With some debuggers (such as the PyCharm debugger) the value of sys.excepthook is set ahead of the
-            # CrashReporter. This causes recursive behaviour when calling sys_excepthook and will continually upload
-            # reports. To prevent from spamming, only call this function once.
-            return
-
         if CrashReporter.active:
             if etype:
                 self._etype = etype
@@ -179,7 +172,7 @@ class CrashReporter(object):
                 self.logger.info('CrashReporter: No crashes detected.')
 
         # Call the default exception hook
-        sys_excepthook(etype, evalue, tb)
+        sys.__excepthook__(etype, evalue, tb)
 
     def load_configuration(self, config):
         cfg = ConfigParser.ConfigParser()
