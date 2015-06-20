@@ -65,7 +65,10 @@ example.py
         cr.application_version = '1.1.350'
                                     
         # Configure the crash reporter to email myaddress@gmail.com 
-        # whenever a crash is detected
+        # whenever a crash is detected.
+        #
+        # OPTIONAL: Specify From header with kwarg from=
+        # if your SMTP auth username is not the From address.
         cr.setup_smtp(user="crashreporter@gmail.com",
                       passwd='12345678',
                       recipients=['myaddress@gmail.com'],
