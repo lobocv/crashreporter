@@ -53,7 +53,7 @@ class CrashReporter(object):
     offline_report_limit = 10
     active = False
 
-    def __init__(self, report_dir=None, html=False, check_interval=5*60, config='', logger=None, activate=True):
+    def __init__(self, report_dir=None, html=True, check_interval=5*60, config='', logger=None, activate=True):
         self.html = html
         self.logger = logger if logger else logging.getLogger(__name__)
         # Setup the directory used to store offline crash reports
