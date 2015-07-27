@@ -126,6 +126,4 @@ The CrashReporter has several attributes that can be changed:
 Example Report
 --------------
 
-Check out the html report produced [here](example_report.html).
-
 ![alt tag](https://raw.githubusercontent.com/lobocv/crashreporter/master/example.png)
