@@ -37,57 +37,35 @@ Person objects, one with an age and one without. When we attempt to combine thei
 example.py
 
 ```python
-
+    
     from crashreporter import CrashReporter
-
+    
     class Person(object):
-
+    
         def __init__(self, name, age=None):
             self.name = name
             self.age = age
-
+    
     def combine_ages(person_a, person_b):
         a_local_variable = 134
-        return person_a.age + person_b.age
-
+        return person_a.age + person_b.age, Person.__name__
+    
     if __name__ == '__main__':
-        # The crash reporter will automatically start working once
-        # the instance is created. You can stop it from starting
-        # on creation by setting the activate argument
-        # to False (default is True).
+        # Note I have used a configuration file for setting up SMTP and FTP accounts but you can also call functions
+        # cr.setup_smtp() and cr.setup_ftp() with your credentials to configure SMTP/FTP respectively.
         cr = CrashReporter(report_dir='/home/calvin/crashreporter',
-                           check_interval=3600,
-                           html=True,
-                           activate=True)
-
-        # Additional (optional) information for the report
+                           check_interval=10,
+                           config='./crashreporter.cfg')
+    
         cr.application_name = 'My App'
         cr.application_version = '1.1.350'
-
-        # Configure the crash reporter to email myaddress@gmail.com
-        # whenever a crash is detected.
-        #
-        # OPTIONAL: Specify From header with kwarg from=
-        # if your SMTP auth username is not the From address.
-        cr.setup_smtp(user="crashreporter@gmail.com",
-                      passwd='12345678',
-                      recipients=['myaddress@gmail.com'],
-                      host="smtp.gmail.com",
-                      port=587)
-
-        # Configure the crash reporter to upload crash reports
-        # to ftp.example.com whenever a crash is detected
-        cr.setup_ftp(host='ftp.example.com',
-                     user='user',
-                     passwd='12345',
-                     path='./myapp/crashreports')
-
-        # Rest of the script begins here. Any crashes from this point on are reported.
-
+    
         calvin = Person('calvin', age=25)
         bob = Person('bob')
-        combine_ages(calvin, bob)   # This will raise an error
-
+        combine_ages(calvin, bob)
+    
+        while 1:
+            pass
 
 ```
 
@@ -148,5 +126,6 @@ The CrashReporter has several attributes that can be changed:
 Example Report
 --------------
 
+Check out the html report produced [here](example_report.html).
 
 ![alt tag](https://raw.githubusercontent.com/lobocv/crashreporter/master/example.png)
