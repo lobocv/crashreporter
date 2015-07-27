@@ -18,14 +18,14 @@ Features of crashreporter include:
 Installation
 ------------
 To install:
-    
+
     pip install crashreporter
-    
-    
+
+
 Usage
 -----
-    
-Implementing the crash reporter is easy. Just create a CrashReporter object. Configure the SMTP or FTP accounts for 
+
+Implementing the crash reporter is easy. Just create a CrashReporter object. Configure the SMTP or FTP accounts for
 uploading of reports (optional) and you are good to go!
 
 In the following example, we wil create a Person class that has an optional age  attribute. We will then create two
@@ -39,17 +39,17 @@ example.py
 ```python
 
     from crashreporter import CrashReporter
-    
+
     class Person(object):
-    
+
         def __init__(self, name, age=None):
             self.name = name
             self.age = age
-    
+
     def combine_ages(person_a, person_b):
         a_local_variable = 134
         return person_a.age + person_b.age
-    
+
     if __name__ == '__main__':
         # The crash reporter will automatically start working once
         # the instance is created. You can stop it from starting
@@ -59,12 +59,12 @@ example.py
                            check_interval=3600,
                            html=True,
                            activate=True)
-                           
-        # Additional (optional) information for the report 
+
+        # Additional (optional) information for the report
         cr.application_name = 'My App'
         cr.application_version = '1.1.350'
-                                    
-        # Configure the crash reporter to email myaddress@gmail.com 
+
+        # Configure the crash reporter to email myaddress@gmail.com
         # whenever a crash is detected.
         #
         # OPTIONAL: Specify From header with kwarg from=
@@ -74,23 +74,23 @@ example.py
                       recipients=['myaddress@gmail.com'],
                       host="smtp.gmail.com",
                       port=587)
-                      
-        # Configure the crash reporter to upload crash reports 
+
+        # Configure the crash reporter to upload crash reports
         # to ftp.example.com whenever a crash is detected
         cr.setup_ftp(host='ftp.example.com',
                      user='user',
                      passwd='12345',
                      path='./myapp/crashreports')
-    
+
         # Rest of the script begins here. Any crashes from this point on are reported.
-            
+
         calvin = Person('calvin', age=25)
         bob = Person('bob')
         combine_ages(calvin, bob)   # This will raise an error
 
 
 ```
-    
+
 When the crash occurs, the crash reporter will attempt to send it by email or upload it to the FTP server, if both methods
 fail, the crash is written to file in `report_dir`. The next time the script is run, the crash reporter will look for
 any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
@@ -112,41 +112,41 @@ Example:
     recipients = developer1@gmail.com, developer2@gmail.com
     host = smtp.gmail.com
     port = 587
-    
+
     [FTP]
     user = user
     passwd = 12345
     host = ftp.example.com
     path = ./myapp/crashreports
     port = 2456
-    
+
 
 
 Attributes
 ----------
 
 The CrashReporter has several attributes that can be changed:
- 
-    offline_report_limit:   
-            The maximum number of offline reports to save before overwriting 
+
+    offline_report_limit:
+            The maximum number of offline reports to save before overwriting
             the oldest report.
-            
-    application_version:    
+
+    application_version:
             Application version as a string to be included in the report.
-            
-    application_name:       
+
+    application_name:
             Application name as a string to be included in the report.
-            
-    source_code_line_limit: 
-            The number of source code lines to include before and after the error 
-            as a tuple (before, after) 
+
+    source_code_line_limit:
+            The number of source code lines to include before and after the error
+            as a tuple (before, after)
 
 
-    
-    
+
+
 
 Example Report
 --------------
 
 
-![alt tag](https://raw.github.com/lobocv/crashreporter/readme/example.png)
+![alt tag](https://raw.githubusercontent.com/lobocv/crashreporter/master/example.png)
