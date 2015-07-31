@@ -28,17 +28,14 @@
     <b>
     {% for tb in traceback %}
         <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
-            File {{tb['file']}}, line: {{tb['line']}} in {{tb['module']|e}}
+            File {{tb['file']|e}}, line: {{tb['line']|e}} in {{tb['module']|e}}
             <DD>
-                {{tb['code']}}
+                {{tb['code']|e}}
             </DD>
         </DL>
     {% endfor %}
         <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px " >
-
-            <DD>
-                {{error}}
-            </DD>
+            {{error|e}}
         </DL>
     </b>
 

@@ -218,8 +218,7 @@ class CrashReporter(object):
         if self.html:
             dt = datetime.datetime.now()
             tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
-            error = traceback.format_exception_only(self._etype, self._evalue)[0]
-
+            error = traceback.format_exception_only(self._etype, self._evalue)[0].strip()
             scope_lines = self._get_source()
             scope_locals = self._get_locals(tb_last)
 
