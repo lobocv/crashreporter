@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+
+<div style="width: 800px;">
+    <h2>
+        
+            
+                My App (v1.1.350)
+            
+
+        
+    </h2>
+<hr>
+    <p>A crash was detected on 27 July 2015 at 07:02 PM.</p>
+</div>
+
+<div style="width: 800px;">
+    <h4>Traceback (most recent call last):</h4>
+    <b>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            File /home/calvin/pycharm-4.5/helpers/pydev/pydevd.py, line: 2357 in &lt;module&gt;
+            <DD>
+                globals = debugger.run(setup['file'], None, None, is_module)
+            </DD>
+        </DL>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            File /home/calvin/pycharm-4.5/helpers/pydev/pydevd.py, line: 1777 in run
+            <DD>
+                pydev_imports.execfile(file, globals, locals)  # execute the script
+            </DD>
+        </DL>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            File /home/calvin/lobocv/crashreporter/example.py, line: 24 in &lt;module&gt;
+            <DD>
+                combine_ages(calvin, bob)
+            </DD>
+        </DL>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
+            File /home/calvin/lobocv/crashreporter/example.py, line: 11 in combine_ages
+            <DD>
+                return person_a.age + person_b.age, Person.__name__
+            </DD>
+        </DL>
+    
+        <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px " >
+
+            <DD>
+                TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
+
+            </DD>
+        </DL>
+    </b>
+
+    <hr>
+
+    <h4>Source Code</h4>
+    <div style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;">
+        <ol start="1">
+            <li style="padding-left"> from crashreporter import CrashReporter
+</li>
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">class Person(object):
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">def __init__(self, name, age=None):
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">self.name = name
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">self.age = age
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">def combine_ages(person_a, person_b):
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">a_local_variable = 134
+</li>
+                
+            
+                
+                    <li style="background-color:#BB0000; padding-left: 0px;">return person_a.age + person_b.age, Person.__name__
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">if __name__ == '__main__':
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr = CrashReporter(report_dir='/home/calvin/crashreporter',
+</li>
+                
+            
+                
+                    <li style="padding-left: 120px;">   check_interval=10,
+</li>
+                
+            
+                
+                    <li style="padding-left: 120px;">   config='./crashreporter.cfg',
+</li>
+                
+            
+                
+                    <li style="padding-left: 120px;">   )
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr.application_name = 'My App'
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">cr.application_version = '1.1.350'
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">calvin = Person('calvin', age=25)
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">bob = Person('bob')
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">combine_ages(calvin, bob)
+</li>
+                
+            
+                
+                    <li style="padding-left: -30px;">
+</li>
+                
+            
+                
+                    <li style="padding-left: 0px;">while 1:
+</li>
+                
+            
+                
+                    <li style="padding-left: 30px;">pass</li>
+                
+            
+        </ol>
+    </div>
+
+    <hr>
+
+    <h4>Local Variables in the scope of combine_ages</h4>
+    <table border="1" style="width:800px">
+        
+            <tr>
+                <td style="width:30%">a_local_variable</td>
+                <td>134</td>
+            </tr>
+        
+            <tr>
+                <td style="width:30%">person_b</td>
+                <td>&lt;__main__.Person object at 0x7faf13df3710&gt;</td>
+            </tr>
+        
+            <tr>
+                <td style="width:30%">person_a</td>
+                <td>&lt;__main__.Person object at 0x7faf13df3750&gt;</td>
+            </tr>
+        
+    </table>
+
+</div>
+
+</body>
+</html>
