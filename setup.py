@@ -12,9 +12,10 @@ setup(
     description='Track and send crash reports by email or FTP',
     author='Calvin Lobo',
     author_email='calvinvlobo@gmail.com',
+    license='MIT',
     url='https://github.com/lobocv/crashreporter',
     download_url='https://github.com/lobocv/crashreporter/tarball/%s' % __version__,
     keywords=['crash', 'reporting', 'testing', 'debugging', 'bugs'],
     classifiers=[],
-    install_requires=['jinja2'],
+    install_requires=['jinja2']
 )
