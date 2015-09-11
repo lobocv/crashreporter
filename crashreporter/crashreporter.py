@@ -20,7 +20,6 @@ from email.mime.text import MIMEText
 from email import encoders
 
 
-
 class CrashReporter(object):
     """
     Create a context manager that emails or uploads a report by FTP with the traceback on a crash.
@@ -29,13 +28,12 @@ class CrashReporter(object):
     If a crash report fails to upload, the report is saved locally to the `report_dir` directory. The next time the
     CrashReporter starts up, it will attempt to upload all offline reports every `check_interval` seconds. After a
     successful upload the offline reports are deleted. A maximum of `offline_report_limit` reports are saved at any
-    time. Reports are named crashreport.1, crashreport.2, crashreport.3 and so on. The most recent report is always
-    crashreport.1.
+    time. Reports are named crashreport01, crashreport02, crashreport03 and so on. The most recent report is always
+    crashreport01.
 
     :param report_dir: Directory to save offline reports.
     :param check_interval: How often the to attempt to send offline reports
     :param logger: Optional logger to use.
-    :param offline_report_limit: Number of offline reports to save.
     :param config: Path to configuration file that defines the arguments to setup_smtp and setup_ftp. The file has the
                    format of a ConfigParser file with sections [SMTP] and [FTP]
     :param html: Create HTML reports (True) or plain text (False).
@@ -43,6 +41,7 @@ class CrashReporter(object):
     """
     _report_name = "crashreport%02d"
     html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
+    active = False
     ''' Application name as a string to be included in the report'''
     application_name = None
     ''' Application version as a string to be included in the report'''
@@ -51,7 +50,6 @@ class CrashReporter(object):
     source_code_line_limit = (25, 25)
     ''' Number of offline reports to save.'''
     offline_report_limit = 10
-    active = False
 
     def __init__(self, report_dir=None, html=True, check_interval=5*60, config='', logger=None, activate=True):
         self.html = html
