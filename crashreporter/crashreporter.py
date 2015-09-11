@@ -155,17 +155,19 @@ class CrashReporter(object):
                 self._etype = etype
                 self._evalue = evalue
                 self._tb = tb
-                great_success = False
+                # Save the offline report. If the upload of the report is successful, then delete the report.
+                report_path = self._save_report()
+                great_success = False  # Very nice..
                 if self._smtp is not None:
                     # Send the report via email
-                    great_success |= self._sendmail(self.subject(), self.body(), self.attachments(), html=self.html)
+                    with open(report_path, 'r') as _cr:
+                        body = _cr.read()
+                    great_success |= self._sendmail(self.subject(), body, self.attachments(), html=self.html)
                 if self._ftp is not None:
                     # Send the report via FTP
-                    great_success |= self._ftp_submit()
-
-                # If both FTP and email sending fails, save the report
-                if not great_success:
-                    self._save_report()
+                    great_success |= self._ftp_submit(report_path)
+                if great_success:
+                    os.remove(report_path)
             else:
                 self.logger.info('CrashReporter: No crashes detected.')
 
@@ -277,7 +279,7 @@ class CrashReporter(object):
         for report in self._get_offline_reports():
             os.remove(report)
 
-    def _ftp_submit(self):
+    def _ftp_submit(self, path):
         """
         Upload the database to the FTP server. Only submit new information contained in the partial database.
         Merge the partial database back into master after a successful upload.
@@ -291,17 +293,12 @@ class CrashReporter(object):
             self.logger.error(e)
             self.stop_watcher()
             return False
-
-        tmp_file = 'ftp_report'
-        tmp_path = self._write_report(tmp_file)
-
+        extension = os.path.splitext(path)[1]
         ftp.cwd(info['path'])
-        with open(tmp_path, 'rb') as _f:
-            ext = '.html' if self.html else '.txt'
-            new_filename = self._report_name % (len(ftp.nlst()) + 1) + ext
+        with open(path, 'rb') as _f:
+            new_filename = self._report_name % (len(ftp.nlst()) + 1) + extension
             ftp.storlines('STOR %s' % new_filename, _f)
-            os.remove(tmp_path)
-            self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
+            self.logger.info('CrashReporter: FTP submission to %s successful.' % info['host'])
             return True
 
     def _ftp_send_offline_reports(self):
@@ -409,17 +406,10 @@ class CrashReporter(object):
                 pass
         return _locals
 
-    def _write_report(self, path):
-        # Write a new report
-        path = os.path.splitext(path)[0] + ('.html' if self.html else '.txt')
-        with open(path, 'w') as _f:
-            _f.write(self.body())
-        return path
-
     def _save_report(self):
         """
-        Save the crash report to a file. Keeping the last 5 files in a cyclical FIFO buffer.
-        The newest crash report is 01
+        Save the crash report to a file. Keeping the last `offline_report_limit` files in a cyclical FIFO buffer.
+        The newest crash report always named is 01
         """
         offline_reports = self._get_offline_reports()
         if offline_reports:
@@ -434,8 +424,12 @@ class CrashReporter(object):
             if len(offline_reports) >= self.offline_report_limit:
                 oldest = glob.glob(os.path.join(self.report_dir, self._report_name % (self.offline_report_limit+1) + '*'))[0]
                 os.remove(oldest)
-        new_report_path = os.path.join(self.report_dir, self._report_name % 1)
-        self._write_report(new_report_path)
+        new_report_path = os.path.join(self.report_dir, self._report_name % 1 + ('.html' if self.html else '.txt'))
+        # Write a new report
+        with open(new_report_path, 'w') as _f:
+            _f.write(self.body())
+
+        return new_report_path
 
     def _get_offline_reports(self):
         return sorted(glob.glob(os.path.join(self.report_dir, "crashreport*")))
