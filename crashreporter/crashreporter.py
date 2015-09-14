@@ -55,7 +55,7 @@ class CrashReporter(object):
     ''' The number of traceback objects (from most recent) to inspect for source code, local variables etc.'''
     inspection_level = 1
     ''' Regex to find object references as signified by dot lookup'''
-    obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+")
+    obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
 
     def __init__(self, report_dir=None, html=True, check_interval=5*60, config='', logger=None, activate=True):
         self.html = html
