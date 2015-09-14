@@ -3,7 +3,7 @@ __author__ = 'calvin'
 import re
 import inspect
 import traceback
-from types import FunctionType, MethodType, ModuleType
+from types import FunctionType, MethodType, ModuleType, BuiltinMethodType, BuiltinFunctionType
 
 
 obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
@@ -29,7 +29,7 @@ def string_variable_lookup(tb, s):
         scope = getattr(scope, ref, ValueError)
         if scope is ValueError:
             return scope
-        elif isinstance(scope, (FunctionType, MethodType, ModuleType)):
+        elif isinstance(scope, (FunctionType, MethodType, ModuleType, BuiltinMethodType, BuiltinFunctionType)):
             return ValueError
     return scope
 
