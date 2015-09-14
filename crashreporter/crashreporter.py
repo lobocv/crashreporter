@@ -151,6 +151,8 @@ class CrashReporter(object):
             self._watcher_enabled = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
+
+
     def analyze_traceback(self, tb):
         """
         Extract trace back information into a list of dictionaries.
@@ -161,8 +163,11 @@ class CrashReporter(object):
         info = []
         tb_level = tb
         for filepath, line, module, code in traceback.extract_tb(tb):
-            d = dict(file=filepath, line=line, module=module, code=code, traceback=tb_level,
-                     source=inspect.getsource(tb_level.tb_frame))
+            func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
+
+            d = dict(file=filepath, error_line=line, module=module, code=code, traceback=tb_level,
+                     func_line=func_lineno,
+                     source=zip(xrange(func_lineno, func_lineno+len(func_source)), func_source))
 
             tb_level = getattr(tb_level, 'tb_next', None)
             info.append(d)
@@ -238,28 +243,20 @@ class CrashReporter(object):
         Return a string to be used as the email body. Can be html if html is turned on.
         """
         # Get the last traceback
-        tb_last = self.tb.tb_next
-        if tb_last is None:
-            tb_last = self.tb
-        else:
-            while tb_last.tb_next is not None:
-                tb_last = tb_last.tb_next
-
+        tb_last = self.tb_info[-1]['traceback']
         if self.html:
             dt = datetime.datetime.now()
-            tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self.tb)]
             error = traceback.format_exception_only(self.etype, self.evalue)[0].strip()
-            scope_lines = self._get_source()
-            scope_locals = self._get_locals(tb_last)
-
+            local_vars = self._get_locals(tb_last)
+            # obj_vars = self._get_object_variables(tb_last)
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
-                      'traceback': tb,
+                      'traceback': self.tb_info,
                       'error': error,
-                      'localvars': scope_locals,
+                      'localvars': local_vars,
+                      # 'objvars': obj_vars,
                       'app_name': self.application_name,
                       'app_version': self.application_version,
-                      'source_code': scope_lines
                       }
 
             with open(self.html_template, 'r') as _f:
@@ -281,14 +278,14 @@ class CrashReporter(object):
                 body += "{ln}.{indent}{line}".format(ln=ln, indent=int(indent / 30. * 4) * ' ', line=line)
             body += '\n'
             # Print a table of local variables
-            scope_locals = self._get_locals(tb_last)
+            local_vars = self._get_locals(tb_last)
             limit = 25
             fmt = "{name:<25s}{value:<25s}\n"
             body += '-' * 90 + '\n'
             body += fmt.format(name='Variable', value='Value')
             body += '-' * 90 + '\n'
             count = 0
-            for name, value in scope_locals:
+            for name, value in local_vars:
                 body += fmt.format(name=name, value=repr(value))
                 count += 1
                 if count > limit:

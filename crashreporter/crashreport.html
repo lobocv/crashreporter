@@ -41,15 +41,20 @@
 
     <hr>
 
-    <h4>Source Code</h4>
-    <div style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;">
-        <ol start="{{source_code[0][0]}}">
-            <li style="padding-left"> {{source_code[0][2]}}</li>
-            {% for n, indent, line in source_code[1:] %}
-                {% if n == traceback[-1]['line'] %}
-                    <li style="background-color:#BB0000; padding-left: {{indent}}px;">{{line}}</li>
+    <h4>Source Code: {{traceback[-1]['file']}}</h4>
+
+    <div style="width: 800px; background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;">
+        <ol start="{{traceback[-1]['func_line']}}">
+            {% for n, line in traceback[-1]['source'] %}
+                {% set stripped_line = line.replace('    ', '') %}
+                {% set indent = 30 * (line.count('    ')-1) %}
+                {% if n == traceback[-1]['error_line'] %}
+                    <li style="background-color:#BB0000; padding-left:{{indent}}px;">
+                        {{stripped_line}}
+                    </li>
                 {% else %}
-                    <li style="padding-left: {{indent}}px;">{{line}}</li>
+                    <li style="padding-left: {{indent}}px;">{{stripped_line}}</li>
+
                 {% endif %}
             {% endfor %}
         </ol>
