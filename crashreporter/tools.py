@@ -1,0 +1,105 @@
+__author__ = 'calvin'
+
+import re
+import inspect
+import traceback
+from types import FunctionType, MethodType, ModuleType
+
+
+obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
+
+
+def string_variable_lookup(tb, s):
+    """
+    Look up the value of an object in a traceback by a dot-lookup string.
+    ie. "self.crashreporter.application_name"
+
+    Returns ValueError if value was not found in the scope of the traceback.
+
+    :param tb: traceback
+    :param s: lookup string
+    :return: value of the
+    """
+
+    refs = s.split('.')
+    scope = tb.tb_frame.f_locals.get(refs[0], ValueError)
+    if scope is ValueError:
+        return scope
+    for ref in refs[1:]:
+        scope = getattr(scope, ref, ValueError)
+        if scope is ValueError:
+            return scope
+        elif isinstance(scope, (FunctionType, MethodType, ModuleType)):
+            return ValueError
+    return scope
+
+
+def get_object_references(tb, source):
+    """
+    Find the values of referenced attributes of objects within the traceback scope.
+
+    :param tb: traceback
+    :return: list of tuples containing (variable name, value)
+    """
+    global obj_ref_regex
+    referenced_attr = set()
+    for lineno, line in source:
+        referenced_attr.update(set(re.findall(obj_ref_regex, line)))
+    referenced_attr = sorted(referenced_attr)
+    info = []
+    for attr in referenced_attr:
+        value = string_variable_lookup(tb, attr)
+        if value is not ValueError:
+            info.append((attr, value))
+    return info
+
+
+def get_local_references(tb):
+    """
+    Find the values of the local variables within the traceback scope.
+
+    :param tb: traceback
+    :return: list of tuples containing (variable name, value)
+    """
+    if 'self' in tb.tb_frame.f_locals:
+        _locals = [('self', repr(tb.tb_frame.f_locals['self']))]
+    else:
+        _locals = []
+    for k, v in tb.tb_frame.f_locals.iteritems():
+        if k == 'self':
+            continue
+        try:
+            _locals.append((k, repr(v)))
+        except TypeError:
+            pass
+    return _locals
+
+
+def analyze_traceback(tb, inspection_level=1):
+    """
+    Extract trace back information into a list of dictionaries.
+
+    :param tb: traceback
+    :return: list of dicts containing filepath, line, module, code, traceback level and source code for tracebacks
+    """
+    info = []
+    tb_level = tb
+    extracted_tb = traceback.extract_tb(tb)
+    for ii, (filepath, line, module, code) in enumerate(extracted_tb):
+        func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
+
+        d = dict(file=filepath,
+                 error_lineno=line,
+                 module=module,
+                 error_line=code,
+                 traceback=tb_level,
+                 func_line=func_lineno, source='')
+        if len(extracted_tb) - ii <= inspection_level:
+            # Perform advanced inspection on the last `inspection_level` tracebacks.
+            d['source'] = zip(xrange(func_lineno, func_lineno+len(func_source)), func_source)
+            d['local_vars'] = get_local_references(tb_level)
+            d['object_vars'] = get_object_references(tb_level, d['source'])
+        tb_level = getattr(tb_level, 'tb_next', None)
+        info.append(d)
+
+    return info

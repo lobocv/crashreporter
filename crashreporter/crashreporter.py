@@ -13,9 +13,8 @@ import logging
 import ftplib
 import jinja2
 import ConfigParser
-import inspect
 
-from types import FunctionType, MethodType, ModuleType
+from tools import analyze_traceback
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -157,82 +156,6 @@ class CrashReporter(object):
             self._watcher_enabled = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
-    def analyze_traceback(self, tb):
-        """
-        Extract trace back information into a list of dictionaries.
-
-        :param tb: traceback
-        :return: list of dicts containing filepath, line, module, code, traceback level and source code for tracebacks
-        """
-        info = []
-        tb_level = tb
-        extracted_tb = traceback.extract_tb(tb)
-        for ii, (filepath, line, module, code) in enumerate(extracted_tb):
-            func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
-
-            d = dict(file=filepath, error_lineno=line, module=module, error_line=code, traceback=tb_level,
-                     func_line=func_lineno, source='')
-            if len(extracted_tb) - ii <= self.inspection_level:
-                # Perform advanced inspection on the last `inspection_level` tracebacks.
-                d['source'] = zip(xrange(func_lineno, func_lineno+len(func_source)), func_source)
-                d['local_vars'] = self._get_locals(tb_level)
-                d['object_vars'] = self._get_object_variables(tb_level, d['source'])
-            tb_level = getattr(tb_level, 'tb_next', None)
-            info.append(d)
-
-        return info
-
-    @staticmethod
-    def string_variable_lookup(tb, s):
-        """
-        Look up the value of an object in a traceback by a dot-lookup string.
-        ie. "self.crashreporter.application_name"
-
-        Returns ValueError if value was not found in the scope of the traceback.
-
-        :param tb: traceback
-        :param s: lookup string
-        :return: value of the
-        """
-
-        refs = s.split('.')
-        scope = tb.tb_frame.f_locals.get(refs[0], ValueError)
-        if scope is ValueError:
-            return scope
-        for ref in refs[1:]:
-            scope = getattr(scope, ref, ValueError)
-            if scope is ValueError:
-                return scope
-            elif isinstance(scope, (FunctionType, MethodType, ModuleType)):
-                return ValueError
-        return scope
-
-    def _get_object_variables(self, tb, source):
-        referenced_attr = set()
-        for lineno, line in source:
-            referenced_attr.update(set(re.findall(CrashReporter.obj_ref_regex, line)))
-        referenced_attr = sorted(referenced_attr)
-        info = {}
-        for attr in referenced_attr:
-            value = self.string_variable_lookup(tb, attr)
-            if value is not ValueError:
-                info[attr] = value
-        return info
-
-    def _get_locals(self, tb):
-        if 'self' in tb.tb_frame.f_locals:
-            _locals = [('self', repr(tb.tb_frame.f_locals['self']))]
-        else:
-            _locals = []
-        for k, v in tb.tb_frame.f_locals.iteritems():
-            if k == 'self':
-                continue
-            try:
-                _locals.append((k, repr(v)))
-            except TypeError:
-                pass
-        return _locals
-
     def exception_handler(self, etype, evalue, tb):
         """
         Catches crashes/ un-caught exceptions. Creates and attempts to upload the crash reports. Calls the default
@@ -248,7 +171,7 @@ class CrashReporter(object):
                 self.etype = etype
                 self.evalue = evalue
                 self.tb = tb
-                self.tb_info = self.analyze_traceback(tb)
+                self.tb_info = analyze_traceback(tb)
                 # Save the offline report. If the upload of the report is successful, then delete the report.
                 report_path = self._save_report()
                 great_success = False  # Very nice..
@@ -306,14 +229,10 @@ class CrashReporter(object):
         if self.html:
             dt = datetime.datetime.now()
             error = traceback.format_exception_only(self.etype, self.evalue)[0].strip()
-            local_vars = self._get_locals(tb_last)
-            # obj_vars = self._get_object_variables(tb_last)
             fields = {'date': dt.strftime('%d %B %Y'),
                       'time': dt.strftime('%I:%M %p'),
                       'traceback': self.tb_info,
                       'error': error,
-                      'localvars': local_vars,
-                      # 'objvars': obj_vars,
                       'app_name': self.application_name,
                       'app_version': self.application_version,
                       }
@@ -326,7 +245,6 @@ class CrashReporter(object):
             return html_body
 
         else:
-
             body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
             body += '\n'.join(traceback.format_exception(self.etype, self.evalue, self.tb))
             body += '\n'
