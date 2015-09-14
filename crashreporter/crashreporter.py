@@ -62,9 +62,10 @@ class CrashReporter(object):
         self.check_interval = check_interval
         self._watcher = None
         self._watcher_enabled = False
-        self._etype = None
-        self._evalue = None
-        self._tb = None
+        self.etype = None
+        self.evalue = None
+        self.tb = None
+        self.tb_info = None
         self._excepthook = None
         # Load the configuration from a file if specified
         if os.path.isfile(config):
@@ -153,6 +154,12 @@ class CrashReporter(object):
             self.logger.info('CrashReporter: Stopping watcher.')
 
     def analyze_traceback(self, tb):
+        """
+        Extract trace back information into a list of dictionaries.
+
+        :param tb: traceback
+        :return: list of dicts containing filepath, line, module, code, traceback level and source code for tracebacks
+        """
         info = []
         tb_level = tb
         for filepath, line, module, code in traceback.extract_tb(tb):
@@ -165,12 +172,21 @@ class CrashReporter(object):
         return info
 
     def exception_handler(self, etype, evalue, tb):
+        """
+        Catches crashes/ un-caught exceptions. Creates and attempts to upload the crash reports. Calls the default
+        exception handler (sys.__except_hook__) upon completion.
+
+        :param etype: Exception type
+        :param evalue: Exception value
+        :param tb: Traceback
+        :return:
+        """
         if CrashReporter.active:
             if etype:
-                self._etype = etype
-                self._evalue = evalue
-                self._tb = tb
-                self.traceback = self.analyze_traceback(tb)
+                self.etype = etype
+                self.evalue = evalue
+                self.tb = tb
+                self.tb_info = self.analyze_traceback(tb)
                 great_success = False
                 if self._smtp is not None:
                     # Send the report via email
@@ -222,17 +238,17 @@ class CrashReporter(object):
         Return a string to be used as the email body. Can be html if html is turned on.
         """
         # Get the last traceback
-        tb_last = self._tb.tb_next
+        tb_last = self.tb.tb_next
         if tb_last is None:
-            tb_last = self._tb
+            tb_last = self.tb
         else:
             while tb_last.tb_next is not None:
                 tb_last = tb_last.tb_next
 
         if self.html:
             dt = datetime.datetime.now()
-            tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self._tb)]
-            error = traceback.format_exception_only(self._etype, self._evalue)[0].strip()
+            tb = [dict(zip(('file', 'line', 'module', 'code'),  t)) for t in traceback.extract_tb(self.tb)]
+            error = traceback.format_exception_only(self.etype, self.evalue)[0].strip()
             scope_lines = self._get_source()
             scope_locals = self._get_locals(tb_last)
 
@@ -256,7 +272,7 @@ class CrashReporter(object):
         else:
 
             body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
-            body += '\n'.join(traceback.format_exception(self._etype, self._evalue, self._tb))
+            body += '\n'.join(traceback.format_exception(self.etype, self.evalue, self.tb))
             body += '\n'
             # Print the source code in the local scope of the error
             body += 'Source Code:\n\n'
@@ -402,7 +418,7 @@ class CrashReporter(object):
 
     def _get_source(self):
         scope_lines = []
-        _file, line_num, func, text = traceback.extract_tb(self._tb)[-1]
+        _file, line_num, func, text = traceback.extract_tb(self.tb)[-1]
         start = line_num - self.source_code_line_limit[0]
         end = line_num + self.source_code_line_limit[1]
         with open(_file, 'r') as _f:
