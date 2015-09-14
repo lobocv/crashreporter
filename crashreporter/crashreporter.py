@@ -3,6 +3,7 @@ __author__ = 'calvin'
 import sys
 import traceback
 import os
+import re
 import glob
 import datetime
 import shutil
@@ -14,11 +15,13 @@ import jinja2
 import ConfigParser
 import inspect
 
+from types import FunctionType, MethodType, ModuleType
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
+
 
 
 class CrashReporter(object):
@@ -47,10 +50,12 @@ class CrashReporter(object):
     application_name = None
     ''' Application version as a string to be included in the report'''
     application_version = None
-    ''' The number of source code lines to include before and after the error occurs'''
-    source_code_line_limit = (25, 25)
     ''' Number of offline reports to save.'''
     offline_report_limit = 10
+    ''' The number of traceback objects (from most recent) to inspect for source code, local variables etc.'''
+    inspection_level = 1
+    ''' Regex to find object references as signified by dot lookup'''
+    obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+")
 
     def __init__(self, report_dir=None, html=True, check_interval=5*60, config='', logger=None, activate=True):
         self.html = html
@@ -160,17 +165,61 @@ class CrashReporter(object):
         """
         info = []
         tb_level = tb
-        for filepath, line, module, code in traceback.extract_tb(tb):
+        extracted_tb = traceback.extract_tb(tb)
+        for ii, (filepath, line, module, code) in enumerate(extracted_tb):
             func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
 
             d = dict(file=filepath, error_lineno=line, module=module, error_line=code, traceback=tb_level,
-                     func_line=func_lineno,
-                     source=zip(xrange(func_lineno, func_lineno+len(func_source)), func_source))
-
+                     func_line=func_lineno, source='')
+            if len(extracted_tb) - ii <= self.inspection_level:
+                # Perform advanced inspection on the last `inspection_level` tracebacks.
+                d['source'] = zip(xrange(func_lineno, func_lineno+len(func_source)), func_source)
+                d['local_vars'] = self._get_locals(tb_level)
+                d['object_vars'] = self._get_object_variables(tb_level, d['source'])
             tb_level = getattr(tb_level, 'tb_next', None)
             info.append(d)
 
         return info
+
+    @staticmethod
+    def string_variable_lookup(tb, s):
+        refs = s.split('.')
+        scope = tb.tb_frame.f_locals.get(refs[0], NotImplementedError)
+        if scope is NotImplementedError:
+            return scope
+        for ref in refs[1:]:
+            scope = getattr(scope, ref, NotImplementedError)
+            if scope is NotImplementedError:
+                return scope
+            elif isinstance(scope, (FunctionType, MethodType, ModuleType)):
+                return NotImplementedError
+        return scope
+
+    def _get_object_variables(self, tb, source):
+        referenced_attr = set()
+        for lineno, line in source:
+            referenced_attr.update(set(re.findall(CrashReporter.obj_ref_regex, line)))
+        referenced_attr = sorted(referenced_attr)
+        info = {}
+        for attr in referenced_attr:
+            value = self.string_variable_lookup(tb, attr)
+            if value is not NotImplementedError:
+                info[attr] = value
+        return info
+
+    def _get_locals(self, tb):
+        if 'self' in tb.tb_frame.f_locals:
+            _locals = [('self', repr(tb.tb_frame.f_locals['self']))]
+        else:
+            _locals = []
+        for k, v in tb.tb_frame.f_locals.iteritems():
+            if k == 'self':
+                continue
+            try:
+                _locals.append((k, repr(v)))
+            except TypeError:
+                pass
+        return _locals
 
     def exception_handler(self, etype, evalue, tb):
         """
@@ -271,7 +320,7 @@ class CrashReporter(object):
             body += '\n'
             # Print the source code in the local scope of the error
             body += 'Source Code:\n\n'
-            scope_lines = self._get_source(tb_last)
+            scope_lines = tb_last['source']
             for ln, indent, line in scope_lines:
                 body += "{ln}.{indent}{line}".format(ln=ln, indent=int(indent / 30. * 4) * ' ', line=line)
             body += '\n'
@@ -405,31 +454,6 @@ class CrashReporter(object):
             if great_success:
                 self.logger.info('CrashReporter: Offline reports sent.')
             return great_success
-
-    def _get_source(self):
-        scope_lines = []
-        _file, line_num, func, text = traceback.extract_tb(self.tb)[-1]
-        start = line_num - self.source_code_line_limit[0]
-        end = line_num + self.source_code_line_limit[1]
-        with open(_file, 'r') as _f:
-            for c, l in enumerate(_f):
-                if start <= c + 1 <= end:
-                    scope_lines.append((c+1, 30 * (l.count('    ')-1), l.replace('    ', '')))
-        return scope_lines
-
-    def _get_locals(self, tb):
-        if 'self' in tb.tb_frame.f_locals:
-            _locals = [('self', repr(tb.tb_frame.f_locals['self']))]
-        else:
-            _locals = []
-        for k, v in tb.tb_frame.f_locals.iteritems():
-            if k == 'self':
-                continue
-            try:
-                _locals.append((k, repr(v)))
-            except TypeError:
-                pass
-        return _locals
 
     def _save_report(self):
         """

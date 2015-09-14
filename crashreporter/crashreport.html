@@ -64,13 +64,24 @@
 
     <h4>Local Variables in the scope of {{traceback[-1]['module']|e}}</h4>
     <table border="1" style="width:800px">
-        {% for field, value in localvars %}
+        {% for field, value in traceback[-1]['local_vars'] %}
             <tr>
                 <td style="width:30%">{{ field|e }}</td>
                 <td>{{ value|e }}</td>
             </tr>
         {% endfor %}
     </table>
+
+    <h4>Object Inspection in the scope of {{traceback[-1]['module']|e}}</h4>
+    <table border="1" style="width:800px">
+        {% for field, value in traceback[-1]['object_vars'].iteritems() %}
+            <tr>
+                <td style="width:30%">{{ field|e }}</td>
+                <td>{{ value|e }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
 
 </div>
 
