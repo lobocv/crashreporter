@@ -12,6 +12,7 @@ import logging
 import ftplib
 import jinja2
 import ConfigParser
+import inspect
 
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
@@ -151,12 +152,25 @@ class CrashReporter(object):
             self._watcher_enabled = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
+    def analyze_traceback(self, tb):
+        info = []
+        tb_level = tb
+        for filepath, line, module, code in traceback.extract_tb(tb):
+            d = dict(file=filepath, line=line, module=module, code=code, traceback=tb_level,
+                     source=inspect.getsource(tb_level.tb_frame))
+
+            tb_level = getattr(tb_level, 'tb_next', None)
+            info.append(d)
+
+        return info
+
     def exception_handler(self, etype, evalue, tb):
         if CrashReporter.active:
             if etype:
                 self._etype = etype
                 self._evalue = evalue
                 self._tb = tb
+                self.traceback = self.analyze_traceback(tb)
                 great_success = False
                 if self._smtp is not None:
                     # Send the report via email
