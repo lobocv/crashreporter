@@ -23,7 +23,6 @@ from email.mime.text import MIMEText
 from email import encoders
 
 
-
 class CrashReporter(object):
     """
     Create a context manager that emails or uploads a report by FTP with the traceback on a crash.
@@ -82,6 +81,7 @@ class CrashReporter(object):
     def setup_smtp(self, host, port, user, passwd, recipients, **kwargs):
         """
         Set up the crash reporter to send reports via email using SMTP
+
         :param host: SMTP host
         :param port: SMTP port
         :param user: sender email address
@@ -95,6 +95,7 @@ class CrashReporter(object):
     def setup_ftp(self, host, user, passwd, path, port=21, acct='', timeout=5, **kwargs):
         """
         Set up the crash reporter to upload reports via FTP.
+
         :param host: FTP host
         :param user: FTP user
         :param passwd: FTP password for user
@@ -183,16 +184,27 @@ class CrashReporter(object):
 
     @staticmethod
     def string_variable_lookup(tb, s):
+        """
+        Look up the value of an object in a traceback by a dot-lookup string.
+        ie. "self.crashreporter.application_name"
+
+        Returns ValueError if value was not found in the scope of the traceback.
+
+        :param tb: traceback
+        :param s: lookup string
+        :return: value of the
+        """
+
         refs = s.split('.')
-        scope = tb.tb_frame.f_locals.get(refs[0], NotImplementedError)
-        if scope is NotImplementedError:
+        scope = tb.tb_frame.f_locals.get(refs[0], ValueError)
+        if scope is ValueError:
             return scope
         for ref in refs[1:]:
-            scope = getattr(scope, ref, NotImplementedError)
-            if scope is NotImplementedError:
+            scope = getattr(scope, ref, ValueError)
+            if scope is ValueError:
                 return scope
             elif isinstance(scope, (FunctionType, MethodType, ModuleType)):
-                return NotImplementedError
+                return ValueError
         return scope
 
     def _get_object_variables(self, tb, source):
@@ -203,7 +215,7 @@ class CrashReporter(object):
         info = {}
         for attr in referenced_attr:
             value = self.string_variable_lookup(tb, attr)
-            if value is not NotImplementedError:
+            if value is not ValueError:
                 info[attr] = value
         return info
 
