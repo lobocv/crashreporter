@@ -30,7 +30,7 @@
         <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
             File {{tb['file']|e}}, line: {{tb['line']|e}} in {{tb['module']|e}}
             <DD>
-                {{tb['code']|e}}
+                {{tb['error_line']|e}}
             </DD>
         </DL>
     {% endfor %}
@@ -48,7 +48,7 @@
             {% for n, line in traceback[-1]['source'] %}
                 {% set stripped_line = line.replace('    ', '') %}
                 {% set indent = 30 * (line.count('    ')-1) %}
-                {% if n == traceback[-1]['error_line'] %}
+                {% if n == traceback[-1]['error_lineno'] %}
                     <li style="background-color:#BB0000; padding-left:{{indent}}px;">
                         {{stripped_line}}
                     </li>

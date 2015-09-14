@@ -151,8 +151,6 @@ class CrashReporter(object):
             self._watcher_enabled = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
-
-
     def analyze_traceback(self, tb):
         """
         Extract trace back information into a list of dictionaries.
@@ -165,7 +163,7 @@ class CrashReporter(object):
         for filepath, line, module, code in traceback.extract_tb(tb):
             func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
 
-            d = dict(file=filepath, error_line=line, module=module, code=code, traceback=tb_level,
+            d = dict(file=filepath, error_lineno=line, module=module, error_line=code, traceback=tb_level,
                      func_line=func_lineno,
                      source=zip(xrange(func_lineno, func_lineno+len(func_source)), func_source))
 
