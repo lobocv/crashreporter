@@ -34,7 +34,7 @@ def string_variable_lookup(tb, s):
     return scope
 
 
-def get_object_references(tb, source):
+def get_object_references(tb, source, max_string_length=1000):
     """
     Find the values of referenced attributes of objects within the traceback scope.
 
@@ -50,11 +50,14 @@ def get_object_references(tb, source):
     for attr in referenced_attr:
         value = string_variable_lookup(tb, attr)
         if value is not ValueError:
-            info.append((attr, value))
+            vstr = repr(value)
+            if len(vstr) > max_string_length:
+                vstr = vstr[:max_string_length] + ' ...'
+            info.append((attr, vstr))
     return info
 
 
-def get_local_references(tb):
+def get_local_references(tb, max_string_length=1000):
     """
     Find the values of the local variables within the traceback scope.
 
@@ -69,7 +72,10 @@ def get_local_references(tb):
         if k == 'self':
             continue
         try:
-            _locals.append((k, repr(v)))
+            vstr = repr(v)
+            if len(vstr) > max_string_length:
+                vstr = vstr[:max_string_length] + ' ...'
+            _locals.append((k, vstr))
         except TypeError:
             pass
     return _locals

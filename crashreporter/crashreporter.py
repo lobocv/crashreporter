@@ -33,6 +33,16 @@ class CrashReporter(object):
     time. Reports are named crashreport01, crashreport02, crashreport03 and so on. The most recent report is always
     crashreport01.
 
+    Report Customizing Attributes:
+
+    application_name: Application name as a string to be included in the report
+    application_version: Application version as a string to be included in the report
+    user_identifier: User identifier as a string to add to the report
+    offline_report_limit: Maximum number of offline reports to save.
+    max_string_length: Maximum string length for values returned in variable inspection. This prevents reports which
+                       contain array data from becoming too large.
+    inspection_level: The number of traceback objects (from most recent) to inspect for source code, local variables etc
+
     :param report_dir: Directory to save offline reports.
     :param check_interval: How often the to attempt to send offline reports
     :param logger: Optional logger to use.
@@ -44,17 +54,12 @@ class CrashReporter(object):
     _report_name = "crashreport%02d"
     html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'crashreport.html')
     active = False
-    ''' Application name as a string to be included in the report'''
     application_name = None
-    ''' Application version as a string to be included in the report'''
     application_version = None
-    ''' String identifier to add to the report to help identify where the crash report is coming from (optional)'''
     user_identifier = None
-    ''' Number of offline reports to save.'''
     offline_report_limit = 10
-    ''' The number of traceback objects (from most recent) to inspect for source code, local variables etc.'''
+    max_string_length = 1000
     inspection_level = 1
-    ''' Regex to find object references as signified by dot lookup'''
     obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
 
     def __init__(self, report_dir=None, html=True, check_interval=5*60, config='', logger=None, activate=True):
