@@ -227,55 +227,52 @@ class CrashReporter(object):
         else:
             return 'Crash Report'
 
-    def body(self):
+    def html_body(self):
         """
         Return a string to be used as the email body. Can be html if html is turned on.
         """
-        # Get the last traceback
-        tb_last = self.tb_info[-1]['traceback']
-        if self.html:
-            dt = datetime.datetime.now()
-            error = traceback.format_exception_only(self.etype, self.evalue)[0].strip()
-            fields = {'date': dt.strftime('%d %B %Y'),
-                      'time': dt.strftime('%I:%M %p'),
-                      'traceback': self.tb_info,
-                      'error': error,
-                      'app_name': self.application_name,
-                      'app_version': self.application_version,
-                      'user': self.user_identifier
-                      }
+        dt = datetime.datetime.now()
+        error = traceback.format_exception_only(self.etype, self.evalue)[0].strip()
+        fields = {'date': dt.strftime('%d %B %Y'),
+                  'time': dt.strftime('%I:%M %p'),
+                  'traceback': self.tb_info,
+                  'error': error,
+                  'app_name': self.application_name,
+                  'app_version': self.application_version,
+                  'user': self.user_identifier
+                  }
 
-            with open(self.html_template, 'r') as _f:
-                template = jinja2.Template(_f.read())
-            html_body = template.render(**fields)
-            with open('report.html', 'w') as _g:
-                _g.write(html_body)
-            return html_body
+        with open(self.html_template, 'r') as _f:
+            template = jinja2.Template(_f.read())
+        html_body = template.render(**fields)
+        return html_body
 
-        else:
-            body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
-            body += '\n'.join(traceback.format_exception(self.etype, self.evalue, self.tb))
-            body += '\n'
-            # Print the source code in the local scope of the error
-            body += 'Source Code:\n\n'
-            scope_lines = tb_last['source']
-            for ln, indent, line in scope_lines:
-                body += "{ln}.{indent}{line}".format(ln=ln, indent=int(indent / 30. * 4) * ' ', line=line)
-            body += '\n'
-            # Print a table of local variables
-            local_vars = self._get_locals(tb_last)
-            limit = 25
-            fmt = "{name:<25s}{value:<25s}\n"
-            body += '-' * 90 + '\n'
-            body += fmt.format(name='Variable', value='Value')
-            body += '-' * 90 + '\n'
-            count = 0
-            for name, value in local_vars:
-                body += fmt.format(name=name, value=repr(value))
-                count += 1
-                if count > limit:
-                    break
-            return body
+    def raw_body(self):
+
+        body = datetime.datetime.now().strftime('%d %B %Y, %I:%M %p\n')
+        body += '\n'.join(traceback.format_exception(self.etype, self.evalue, self.tb))
+        body += '\n'
+        # Print the source code in the local scope of the error
+        body += 'Source Code:\n\n'
+        scope_lines = self.tb_info[-1]['source']
+        for ln, line in scope_lines:
+            body += "{ln}.{line}".format(ln=ln, line=line)
+        body += '\nLocal Variables in the scope of {}\n'.format(self.tb_info[-1]['module'])
+        # Print a table of local variables
+        fmt = "{name:<25s}{value:<25s}\n"
+        body += '-' * 90 + '\n'
+        body += fmt.format(name='Variable', value='Value')
+        body += '-' * 90 + '\n'
+        for name, value in self.tb_info[-1]['local_vars']:
+            body += fmt.format(name=name, value=value)
+        body += '\nObject Inspection in the scope of {}\n'.format(self.tb_info[-1]['module'])
+        # Print a table of object attribute references
+        body += '-' * 90 + '\n'
+        body += fmt.format(name='Variable', value='Value')
+        body += '-' * 90 + '\n'
+        for name, value in self.tb_info[-1]['object_vars']:
+            body += fmt.format(name=name, value=value)
+        return body
 
     def attachments(self):
         """
@@ -414,7 +411,7 @@ class CrashReporter(object):
         new_report_path = os.path.join(self.report_dir, self._report_name % 1 + ('.html' if self.html else '.txt'))
         # Write a new report
         with open(new_report_path, 'w') as _f:
-            _f.write(self.body())
+            _f.write(self.html_body() if self.html else self.raw_body())
 
         return new_report_path
 
