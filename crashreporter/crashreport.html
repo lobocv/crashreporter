@@ -20,7 +20,12 @@
         {% endif %}
     </h2>
 <hr>
-    <p>A crash was detected on {{date}} at {{time}}.</p>
+    {% if user is none %}
+        <p>A crash was detected on {{date}} at {{time}}.</p>
+    {% else %}
+        <p>A crash was detected on {{date}} at {{time}} from user {{user}}.</p>
+    {% endif %}
+
 </div>
 
 <div style="width: 800px;">

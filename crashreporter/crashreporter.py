@@ -48,6 +48,8 @@ class CrashReporter(object):
     application_name = None
     ''' Application version as a string to be included in the report'''
     application_version = None
+    ''' String identifier to add to the report to help identify where the crash report is coming from (optional)'''
+    user_identifier = None
     ''' Number of offline reports to save.'''
     offline_report_limit = 10
     ''' The number of traceback objects (from most recent) to inspect for source code, local variables etc.'''
@@ -235,6 +237,7 @@ class CrashReporter(object):
                       'error': error,
                       'app_name': self.application_name,
                       'app_version': self.application_version,
+                      'user': self.user_identifier
                       }
 
             with open(self.html_template, 'r') as _f:
