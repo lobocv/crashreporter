@@ -1,4 +1,4 @@
-__version__ = '1.07'
+__version__ = '1.08'
 
 try:
     from crashreporter import CrashReporter
