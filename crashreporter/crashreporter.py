@@ -294,7 +294,10 @@ class CrashReporter(object):
         Delete all stored offline reports
         """
         for report in self._get_offline_reports():
-            os.remove(report)
+            try:
+                os.remove(report)
+            except OSError as e:
+                logging.error(e)
 
     def submit_offline_reports(self, smtp=True, ftp=True):
         """
