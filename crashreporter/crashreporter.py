@@ -129,8 +129,13 @@ class CrashReporter(object):
             sys.excepthook = self.exception_handler
             self.logger.info('CrashReporter: Enabled')
             if self.report_dir:
-                if os.path.exists(self.report_dir) and self.watcher_enabled:
-                    self.start_watcher()
+                if os.path.exists(self.report_dir):
+                    if self._get_offline_reports():
+                        # First attempt to send the reports, if that fails then start the watcher
+                        if self.submit_offline_reports(smtp=True, ftp=True):
+                            self.delete_offline_reports()
+                        elif self.watcher_enabled:
+                            self.start_watcher()
                 else:
                     os.makedirs(self.report_dir)
 
@@ -152,16 +157,11 @@ class CrashReporter(object):
         if self._watcher and self._watcher.is_alive:
             self._watcher_running = True
         else:
-            if self._get_offline_reports():
-                # First attempt to send the reports, if that fails then start the watcher
-                if self.submit_offline_reports(smtp=True, ftp=True):
-                    self.delete_offline_reports()
-                else:
-                    self.logger.info('CrashReporter: Starting watcher.')
-                    self._watcher = Thread(target=self._watcher_thread, name='offline_reporter')
-                    self._watcher.setDaemon(True)
-                    self._watcher_running = True
-                    self._watcher.start()
+            self.logger.info('CrashReporter: Starting watcher.')
+            self._watcher = Thread(target=self._watcher_thread, name='offline_reporter')
+            self._watcher.setDaemon(True)
+            self._watcher_running = True
+            self._watcher.start()
 
     def stop_watcher(self):
         """
@@ -189,7 +189,7 @@ class CrashReporter(object):
                 self.tb_info = analyze_traceback(tb)
                 # Save the offline report. If the upload of the report is successful, then delete the report.
                 report_path = self._save_report()
-                great_success = False  # Very nice..
+                great_success = False
                 if self._smtp is not None:
                     # Send the report via email
                     with open(report_path, 'r') as _cr:
@@ -198,7 +198,7 @@ class CrashReporter(object):
                 if self._ftp is not None:
                     # Send the report via FTP
                     great_success |= self._ftp_submit(report_path)
-                if great_success:
+                if great_success:  # Very nice..
                     os.remove(report_path)
             else:
                 self.logger.info('CrashReporter: No crashes detected.')
