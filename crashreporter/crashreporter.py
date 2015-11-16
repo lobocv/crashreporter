@@ -361,7 +361,7 @@ class CrashReporter(object):
                 ext = os.path.splitext(report)[1]
                 new_filename = self._report_name % (len(ftp.nlst()) + 1) + ext
                 ftp.storlines('STOR %s' % new_filename, _f)
-        self.logger.info('CrashReporter: Submission to %s successful.' % info['host'])
+                self.logger.info('CrashReporter: Submission of %s to %s successful.' % (new_filename, info['host']))
         return True
 
     def _sendmail(self, subject, body, attachments=None, html=False):
