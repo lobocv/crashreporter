@@ -11,15 +11,16 @@ import smtplib
 import time
 import logging
 import ftplib
-import jinja2
 import ConfigParser
-
-from tools import analyze_traceback
 from threading import Thread
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.text import MIMEText
 from email import encoders
+
+import jinja2
+
+from tools import analyze_traceback
 
 
 class CrashReporter(object):
@@ -44,7 +45,8 @@ class CrashReporter(object):
     inspection_level: The number of traceback objects (from most recent) to inspect for source code, local variables etc
 
     :param report_dir: Directory to save offline reports.
-    :param check_interval: How often the to attempt to send offline reports
+    :param watcher: Enable a thread that periodically checks for any stored offline reports and attempts to send them.
+    :param check_interval: How often the watcher will attempt to send offline reports.
     :param logger: Optional logger to use.
     :param config: Path to configuration file that defines the arguments to setup_smtp and setup_ftp. The file has the
                    format of a ConfigParser file with sections [SMTP] and [FTP]
@@ -62,14 +64,16 @@ class CrashReporter(object):
     inspection_level = 1
     obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
 
-    def __init__(self, report_dir=None, html=True, check_interval=5*60, config='', logger=None, activate=True):
+    def __init__(self, report_dir=None, html=True, config='', logger=None, activate=True,
+                 watcher=True, check_interval=5*60):
         self.html = html
         self.logger = logger if logger else logging.getLogger(__name__)
         # Setup the directory used to store offline crash reports
         self.report_dir = report_dir
         self.check_interval = check_interval
+        self.watcher_enabled = watcher
         self._watcher = None
-        self._watcher_enabled = False
+        self._watcher_running = False
         self.etype = None
         self.evalue = None
         self.tb = None
@@ -125,7 +129,7 @@ class CrashReporter(object):
             sys.excepthook = self.exception_handler
             self.logger.info('CrashReporter: Enabled')
             if self.report_dir:
-                if os.path.exists(self.report_dir):
+                if os.path.exists(self.report_dir) and self.watcher_enabled:
                     self.start_watcher()
                 else:
                     os.makedirs(self.report_dir)
@@ -146,21 +150,25 @@ class CrashReporter(object):
         Start the watcher that periodically checks for offline reports and attempts to upload them.
         """
         if self._watcher and self._watcher.is_alive:
-            self._watcher_enabled = True
+            self._watcher_running = True
         else:
             if self._get_offline_reports():
-                self.logger.info('CrashReporter: Starting watcher.')
-                self._watcher = Thread(target=self._watcher_thread, name='offline_reporter')
-                self._watcher.setDaemon(True)
-                self._watcher_enabled = True
-                self._watcher.start()
+                # First attempt to send the reports, if that fails then start the watcher
+                if self.submit_offline_reports(smtp=True, ftp=True):
+                    self.delete_offline_reports()
+                else:
+                    self.logger.info('CrashReporter: Starting watcher.')
+                    self._watcher = Thread(target=self._watcher_thread, name='offline_reporter')
+                    self._watcher.setDaemon(True)
+                    self._watcher_running = True
+                    self._watcher.start()
 
     def stop_watcher(self):
         """
         Stop the watcher thread that tries to send offline reports.
         """
         if self._watcher:
-            self._watcher_enabled = False
+            self._watcher_running = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
     def exception_handler(self, etype, evalue, tb):
@@ -287,6 +295,26 @@ class CrashReporter(object):
         """
         for report in self._get_offline_reports():
             os.remove(report)
+
+    def submit_offline_reports(self, smtp=True, ftp=True):
+        """
+        Submit offline reports using the enabled methods (SMTP and/or FTP)
+        Returns a tuple of booleans specifying which methods passed (smtp_success, ftp_success)
+        """
+        ftp_success = smtp_success = False
+
+        if smtp and self._smtp is not None:
+            try:
+                smtp_success = self._smtp_send_offline_reports()
+            except Exception as e:
+                logging.error(e)
+        if ftp and self._ftp is not None:
+            try:
+                ftp_success = self._ftp_send_offline_reports()
+            except Exception as e:
+                logging.error(e)
+
+        return smtp_success, ftp_success
 
     def _ftp_submit(self, path):
         """
@@ -425,15 +453,10 @@ class CrashReporter(object):
         great_success = False
         while not great_success:
             time.sleep(self.check_interval)
-            if not self._watcher_enabled:
+            if not self._watcher_running:
                 break
             self.logger.info('CrashReporter: Attempting to send offline reports.')
-            if self._smtp is not None:
-                great_success |= self._smtp_send_offline_reports()
-            if self._ftp is not None:
-                # Send the report via FTP
-                great_success |= self._ftp_send_offline_reports()
-
+            great_success |= any(self.submit_offline_reports(smtp=True, ftp=True))
         if great_success:
             self.delete_offline_reports()
         self._watcher = None
