@@ -132,7 +132,7 @@ class CrashReporter(object):
                 if os.path.exists(self.report_dir):
                     if self._get_offline_reports():
                         # First attempt to send the reports, if that fails then start the watcher
-                        if self.submit_offline_reports(smtp=True, ftp=True):
+                        if any(self.submit_offline_reports(smtp=True, ftp=True)):
                             self.delete_offline_reports()
                         elif self.watcher_enabled:
                             self.start_watcher()
