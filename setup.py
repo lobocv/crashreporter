@@ -17,5 +17,6 @@ setup(
     download_url='https://github.com/lobocv/crashreporter/tarball/%s' % __version__,
     keywords=['crash', 'reporting', 'testing', 'debugging', 'bugs'],
     classifiers=[],
-    install_requires=['jinja2', 'requests']
+    install_requires=["Jinja2==2.8",
+                      "requests==2.8.1"]
 )
