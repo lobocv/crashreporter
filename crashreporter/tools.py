@@ -43,7 +43,7 @@ def get_object_references(tb, source, max_string_length=1000):
     """
     global obj_ref_regex
     referenced_attr = set()
-    for lineno, line in source:
+    for line in source.split('\n'):
         referenced_attr.update(set(re.findall(obj_ref_regex, line)))
     referenced_attr = sorted(referenced_attr)
     info = []
@@ -81,7 +81,7 @@ def get_local_references(tb, max_string_length=1000):
     return _locals
 
 
-def analyze_traceback(tb, inspection_level=1):
+def analyze_traceback(tb, inspection_level=None):
     """
     Extract trace back information into a list of dictionaries.
 
@@ -94,17 +94,17 @@ def analyze_traceback(tb, inspection_level=1):
     for ii, (filepath, line, module, code) in enumerate(extracted_tb):
         func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
 
-        d = dict(file=filepath,
-                 error_lineno=line,
-                 module=module,
-                 error_line=code,
-                 traceback=tb_level,
-                 func_line=func_lineno, source='')
-        if len(extracted_tb) - ii <= inspection_level:
+        d = {"File": filepath,
+             "Error Line Number": line,
+             "Module": module,
+             "Error Line": code,
+             "Module Line Number": func_lineno,
+             "Source Code": ''}
+        if inspection_level is None or len(extracted_tb) - ii <= inspection_level:
             # Perform advanced inspection on the last `inspection_level` tracebacks.
-            d['source'] = zip(xrange(func_lineno, func_lineno+len(func_source)), func_source)
-            d['local_vars'] = get_local_references(tb_level)
-            d['object_vars'] = get_object_references(tb_level, d['source'])
+            d['Source Code'] = ''.join(func_source)
+            d['Local Variables'] = get_local_references(tb_level)
+            d['Object Variables'] = get_object_references(tb_level, d['Source Code'])
         tb_level = getattr(tb_level, 'tb_next', None)
         info.append(d)
 

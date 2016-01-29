@@ -2,17 +2,17 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>Crash Report</title>
 </head>
 <body>
 
 <div style="width: 800px;">
     <h2>
-        {% if app_name != None %}
-            {% if app_version != None %}
-                {{app_name}} (v{{app_version}})
+        {% if info['Application Name'] != None %}
+            {% if info['Application Version'] != None %}
+                {{info['Application Name']}} (v{{info['Application Version']}})
             {% else %}
-                {{app_name}}
+                {{info['Application Name']}}
             {% endif %}
 
         {% else %}
@@ -20,10 +20,10 @@
         {% endif %}
     </h2>
 <hr>
-    {% if user is none %}
-        <p>A crash was detected on {{date}} at {{time}}.</p>
+    {% if info['User'] is none %}
+        <p>A crash was detected on {{info['Date']}} at {{info['Time']}}.</p>
     {% else %}
-        <p>A crash was detected on {{date}} at {{time}} from user {{user}}.</p>
+        <p>A crash was detected on {{info['Date']}} at {{info['Time']}} from user {{info['User']}}.</p>
     {% endif %}
 
 </div>
@@ -31,29 +31,29 @@
 <div style="width: 800px;">
     <h4>Traceback (most recent call last):</h4>
     <b>
-    {% for tb in traceback %}
+    {% for tb in info['Traceback'] %}
         <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;" >
-            File {{tb['file']|e}}, line: {{tb['line']|e}} in {{tb['module']|e}}
+            File {{tb['File']|e}}, line: {{tb['Error Line Number']|e}} in {{tb['Module']|e}}
             <DD>
-                {{tb['error_line']|e}}
+                {{tb['Error Line']|e}}
             </DD>
         </DL>
     {% endfor %}
         <DL style="background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px " >
-            {{error|e}}
+            {{info['Error Type']|e}} {{info['Error Message']|e}}
         </DL>
     </b>
 
     <hr>
 
-    <h4>Source Code: {{traceback[-1]['file']}}</h4>
+    <h4>Source Code: {{info['Traceback'][-1]['File']}}</h4>
 
     <div style="width: 800px; background-color:#FFF099; border-style:solid; border-width: 1px; padding: 10px;">
-        <ol start="{{traceback[-1]['func_line']}}">
-            {% for n, line in traceback[-1]['source'] %}
+        <ol start="{{info['Traceback'][-1]['Module Line Number']}}">
+            {% for line in info['Traceback'][-1]['Source Code'].split('\n') %}
                 {% set stripped_line = line.replace('    ', '') %}
-                {% set indent = 30 * (line.count('    ')-1) %}
-                {% if n == traceback[-1]['error_lineno'] %}
+                {% set indent = 30 * (line.count('    ') - 1) %}
+                {% if info['Traceback'][-1]['Module Line Number'] + loop.index0 == info['Traceback'][-1]['Error Line Number'] %}
                     <li style="background-color:#BB0000; padding-left:{{indent}}px;">
                         {{stripped_line}}
                     </li>
@@ -67,9 +67,9 @@
 
     <hr>
 
-    <h4>Local Variables in the scope of {{traceback[-1]['module']|e}}</h4>
+    <h4>Local Variables in the scope of {{info['Traceback'][-1]['Module']|e}}</h4>
     <table border="1" style="width:800px">
-        {% for field, value in traceback[-1]['local_vars'] %}
+        {% for field, value in info['Traceback'][-1]['Local Variables'] %}
             <tr>
                 <td style="width:30%">{{ field|e }}</td>
                 <td>{{ value|e }}</td>
@@ -77,9 +77,9 @@
         {% endfor %}
     </table>
 
-    <h4>Object Inspection in the scope of {{traceback[-1]['module']|e}}</h4>
+    <h4>Object Inspection in the scope of {{info['Traceback'][-1]['Module']|e}}</h4>
     <table border="1" style="width:800px">
-        {% for field, value in traceback[-1]['object_vars'] %}
+        {% for field, value in info['Traceback'][-1]['Object Variables'] %}
             <tr>
                 <td style="width:30%">{{ field|e }}</td>
                 <td>{{ value|e }}</td>
