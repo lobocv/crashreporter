@@ -1,22 +1,21 @@
 __author__ = 'calvin'
 
-import sys
+import ConfigParser
+import datetime
+import glob
+import json
+import logging
 import os
 import re
-import glob
-import datetime
 import shutil
 import smtplib
-import json
+import sys
 import time
-import logging
-import ConfigParser
-
-from threading import Thread
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
 from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from threading import Thread
 
 import jinja2
 
@@ -54,8 +53,7 @@ class CrashReporter(object):
 
     """
     _report_name = "crash_report_%d"
-    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'hq', 'templates', 'email.html')
-    python_syntax_css = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'hq', 'static', 'syntax.css')
+    html_template = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'email_report.html')
     active = False
     application_name = None
     application_version = None
@@ -252,8 +250,7 @@ class CrashReporter(object):
             template = jinja2.Template(_f.read())
 
         return template.render(info=payload,
-                               inspection_level=inspection_level,
-                               python_syntax_css=self.python_syntax_css)
+                               inspection_level=inspection_level)
 
     def attachments(self):
         """
