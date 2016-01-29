@@ -2,17 +2,17 @@ CrashReporter
 =============
 
 CrashReporter creates reports from the traceback if your python code crashes. The reports can be uploaded directly
-to the developers via email or FTP. If no internet connection is available, crash reporter stores offline reports and
-later sends them when possible.
+to the developers via email or web server. If no internet connection is available, crash reporter stores offline reports
+and later sends them when possible.
 
 
 Features
 --------
 Features of crashreporter include:
 
-    - Uploading of crash reports via email or FTP.
+    - Uploading of crash reports via email or to a web server (HQ).
     - Offline crash reporting that stores crash reports until they are uploaded.
-    - Traceback and local variable output
+    - Traceback and variable inspection output
 
 
 Installation
@@ -25,7 +25,7 @@ To install:
 Usage
 -----
 
-Implementing the crash reporter is easy. Just create a CrashReporter object. Configure the SMTP or FTP accounts for
+Implementing the crash reporter is easy. Just create a CrashReporter object. Configure the SMTP or HQ accounts for
 uploading of reports (optional) and you are good to go!
 
 In the following example, we wil create a Person class that has an optional age  attribute. We will then create two
@@ -51,8 +51,8 @@ example.py
         return person_a.age + person_b.age, Person.__name__
     
     if __name__ == '__main__':
-        # Note I have used a configuration file for setting up SMTP and FTP accounts but you can also call functions
-        # cr.setup_smtp() and cr.setup_ftp() with your credentials to configure SMTP/FTP respectively.
+        # Note I have used a configuration file for setting up SMTP and HQ accounts but you can also call functions
+        # cr.setup_smtp() and cr.setup_hq() with your credentials to configure SMTP/HQ respectively.
         cr = CrashReporter(report_dir='/home/calvin/crashreporter',
                            check_interval=10,
                            config='./crashreporter.cfg')
@@ -69,7 +69,7 @@ example.py
 
 ```
 
-When the crash occurs, the crash reporter will attempt to send it by email or upload it to the FTP server, if both methods
+When the crash occurs, the crash reporter will attempt to send it by email or upload it to the HQ server, if both methods
 fail, the crash is written to file in `report_dir`. The next time the script is run, the crash reporter will look for
 any offline reports and attempt to send them every `check_interval` seconds. After a sucessful upload, the stored reports
 are deleted.
@@ -77,9 +77,9 @@ are deleted.
 
 Configuration File
 ------------------
-If you don't want to keep your SMTP and FTP credentials in your scripts you can alternatively use a configuration file.
+If you don't want to keep your SMTP and HQ credentials in your scripts you can alternatively use a configuration file.
 Simple pass the path to the configuration file as the `config` argument in CrashReporter or call the `load_configuration(path)`
-method with the path. The format of the configuration file should have two sections, SMTP and FTP. Under each section are parameters
+method with the path. The format of the configuration file should have two sections, SMTP and HQ. Under each section are parameters
 that are passed to the setup_smtp and setup_ftp functions:
 
 Example:
@@ -91,12 +91,9 @@ Example:
     host = smtp.gmail.com
     port = 587
 
-    [FTP]
-    user = user
-    passwd = 12345
-    host = ftp.example.com
-    path = ./myapp/crashreports
-    port = 2456
+    [HQ]
+    api_key = ar923086wkjsldl235dfgdf32
+    server = http://www.crashreporter-hq.com
 
 
 
