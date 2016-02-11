@@ -360,7 +360,7 @@ class CrashReporter(object):
                 msg.attach(part)
 
         try:
-            ms = smtplib.SMTP(smtp['host'], smtp['port'])
+            ms = smtplib.SMTP(smtp['host'], smtp['port'], timeout=5)
             ms.ehlo()
             ms.starttls()
             ms.ehlo()
