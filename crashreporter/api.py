@@ -5,7 +5,7 @@ import json
 import logging
 
 
-def upload_report(server, payload):
+def upload_report(server, payload, timeout=10):
     """
     Upload a report to the server.
     :param payload: Dictionary (JSON serializable) of crash data.
@@ -13,32 +13,32 @@ def upload_report(server, payload):
     """
     data = json.dumps(payload)
     try:
-        r = requests.post(server + '/reports/upload', data=data)
+        r = requests.post(server + '/reports/upload', data=data, timeout=timeout)
     except Exception as e:
         logging.error(e)
         return False
     return r
 
 
-def upload_many_reports(server, payloads):
+def upload_many_reports(server, payloads, timeout=10):
 
     data = json.dumps(payloads)
     try:
-        r = requests.post(server + '/reports/upload_many', data=data)
+        r = requests.post(server + '/reports/upload_many', data=data, timeout=timeout)
     except Exception as e:
         logging.error(e)
         return False
     return r
 
 
-def delete_report(server, report_number):
+def delete_report(server, report_number, timeout=5):
     """
     Delete a specific crash report from the server.
     :param report_number: Report Number
     :return: server response
     """
     try:
-        r = requests.post(server + "/reports/delete/%d" % report_number)
+        r = requests.post(server + "/reports/delete/%d" % report_number, timeout=timeout)
     except Exception as e:
         logging.error(e)
         return False
