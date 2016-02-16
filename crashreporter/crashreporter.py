@@ -19,7 +19,7 @@ from threading import Thread
 
 import jinja2
 
-from api import upload_report, upload_many_reports
+from api import upload_report, upload_many_reports, HQ_DEFAULT_TIMEOUT, SMTP_DEFAULT_TIMEOUT
 from tools import analyze_traceback
 
 
@@ -97,10 +97,12 @@ class CrashReporter(object):
         """
         self._smtp = kwargs
         self._smtp.update({'host': host, 'port': port, 'user': user, 'passwd': passwd, 'recipients': recipients})
+        self._smtp['timeout'] = int(kwargs.get('timeout', SMTP_DEFAULT_TIMEOUT))
         self._smtp['from'] = kwargs.get('from', user)
 
     def setup_hq(self, server, **kwargs):
         self._hq = kwargs
+        self._hq['timeout'] = int(kwargs.get('timeout', HQ_DEFAULT_TIMEOUT))
         self._hq.update({'server': server})
 
     def enable(self):
@@ -330,7 +332,7 @@ class CrashReporter(object):
 
     def hq_submit(self, payload):
         payload['HQ Parameters'] = self._hq if self._hq is not None else {}
-        r = upload_report(self._hq['server'], payload=payload)
+        r = upload_report(self._hq['server'], payload, timeout=self._hq['timeout'])
         if r is False:
             return False
         else:
@@ -360,7 +362,7 @@ class CrashReporter(object):
                 msg.attach(part)
 
         try:
-            ms = smtplib.SMTP(smtp['host'], smtp['port'], timeout=5)
+            ms = smtplib.SMTP(smtp['host'], smtp['port'], timeout=smtp['timeout'])
             ms.ehlo()
             ms.starttls()
             ms.ehlo()
@@ -422,7 +424,7 @@ class CrashReporter(object):
                         payloads[report] = payload
 
             if payloads:
-                r = upload_many_reports(self._hq['server'], payloads.values())
+                r = upload_many_reports(self._hq['server'], payloads.values(), timeout=self._hq['timeout'])
                 if r is False or r.status_code != 200:
                     return [False] * len(payloads)
 

@@ -5,7 +5,11 @@ import json
 import logging
 
 
-def upload_report(server, payload, timeout=10):
+HQ_DEFAULT_TIMEOUT = 10
+SMTP_DEFAULT_TIMEOUT = 5
+
+
+def upload_report(server, payload, timeout=HQ_DEFAULT_TIMEOUT):
     """
     Upload a report to the server.
     :param payload: Dictionary (JSON serializable) of crash data.
@@ -20,7 +24,7 @@ def upload_report(server, payload, timeout=10):
     return r
 
 
-def upload_many_reports(server, payloads, timeout=10):
+def upload_many_reports(server, payloads, timeout=HQ_DEFAULT_TIMEOUT):
 
     data = json.dumps(payloads)
     try:
@@ -31,7 +35,7 @@ def upload_many_reports(server, payloads, timeout=10):
     return r
 
 
-def delete_report(server, report_number, timeout=5):
+def delete_report(server, report_number, timeout=HQ_DEFAULT_TIMEOUT):
     """
     Delete a specific crash report from the server.
     :param report_number: Report Number
