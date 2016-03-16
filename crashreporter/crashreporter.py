@@ -97,12 +97,20 @@ class CrashReporter(object):
         """
         self._smtp = kwargs
         self._smtp.update({'host': host, 'port': port, 'user': user, 'passwd': passwd, 'recipients': recipients})
-        self._smtp['timeout'] = int(kwargs.get('timeout', SMTP_DEFAULT_TIMEOUT))
+        try:
+            self._smtp['timeout'] = int(kwargs.get('timeout', SMTP_DEFAULT_TIMEOUT))
+        except Exception as e:
+            logging.error(e)
+            self._smtp['timeout'] = None
         self._smtp['from'] = kwargs.get('from', user)
 
     def setup_hq(self, server, **kwargs):
         self._hq = kwargs
-        self._hq['timeout'] = int(kwargs.get('timeout', HQ_DEFAULT_TIMEOUT))
+        try:
+            self._hq['timeout'] = int(kwargs.get('timeout', HQ_DEFAULT_TIMEOUT))
+        except Exception as e:
+            logging.error(e)
+            self._hq['timeout'] = None
         self._hq.update({'server': server})
 
     def enable(self):
