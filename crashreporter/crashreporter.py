@@ -186,8 +186,18 @@ class CrashReporter(object):
         else:
             self.logger.info('CrashReporter: No crashes detected.')
 
-        # Call the default exception hook
-        sys.__excepthook__(etype, evalue, tb)
+        self.forward_exception(etype, evalue, tb)
+
+    def forward_exception(self, etype, evalue, tb):
+        """
+        Forward the exception onto the backup copy that was made of the sys.__excepthook__
+
+        :param etype: Exceoption type
+        :param evalue: Exception value
+        :param tb: Traceback
+        :return:
+        """
+        self._excepthook(etype, evalue, tb)
 
     def handle_payload(self, payload):
         """
