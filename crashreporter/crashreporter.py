@@ -21,6 +21,7 @@ import jinja2
 
 from api import upload_report, upload_many_reports, HQ_DEFAULT_TIMEOUT, SMTP_DEFAULT_TIMEOUT
 from tools import analyze_traceback
+from process import CrashReportingProcess
 
 
 class CrashReporter(object):
@@ -166,10 +167,13 @@ class CrashReporter(object):
             self._watcher_running = False
             self.logger.info('CrashReporter: Stopping watcher.')
 
+    def interprocess_exception_handler(self, err_name, err_msg, analyzed_tb):
+        payload = self.generate_payload(err_name, err_msg, analyzed_tb)
+        self.handle_payload(payload)
+
     def exception_handler(self, etype, evalue, tb):
         """
-        Catches crashes/ un-caught exceptions. Creates and attempts to upload the crash reports. Calls the default
-        exception handler (sys.__except_hook__) upon completion.
+        Exception hook. Catches crashes / un-caught exceptions and passes them to handle_payload()
 
         :param etype: Exception type
         :param evalue: Exception value
@@ -177,44 +181,50 @@ class CrashReporter(object):
         :return:
         """
         if etype:
-            self.etype = etype
-            self.evalue = evalue
-            self.tb = tb
-            self.payload = self.generate_payload()
-
-            if CrashReporter.active:
-                # Attempt to upload the report
-                hq_success = smtp_success = False
-                if self._hq is not None:
-                    hq_success = self.hq_submit(self.payload)
-                    if hq_success:
-                        self.payload['HQ Submission'] = 'Sent'
-                if self._smtp is not None:
-                    # Send the report via email
-                    smtp_success = self.smtp_submit(self.subject(), self.body(self.payload), self.attachments())
-                    if smtp_success:
-                        self.payload['SMTP Submission'] = 'Sent'
-
-            if not CrashReporter.active or (self._smtp and not smtp_success) or (self._hq and not hq_success):
-                # Only store the offline report if any of the upload methods fail, or if the Crash Reporter was disabled
-                report_path = self.store_report(self.payload)
-                self.logger.info('Offline Report stored %s' % report_path)
+            self.logger.info('CrashReporter: Crashes detected!')
+            self.handle_payload(self.generate_payload(etype.__name__, '%s' % evalue, analyze_traceback(tb)))
         else:
             self.logger.info('CrashReporter: No crashes detected.')
 
         # Call the default exception hook
         sys.__excepthook__(etype, evalue, tb)
 
-    def generate_payload(self):
+    def handle_payload(self, payload):
+        """
+        Given a crash report (JSON represented payload), attempts to upload the crash reports. Calls the default
+        exception handler (sys.__except_hook__) upon completion.
+        :param payload: JSON structure containing crash report along with metadata
+        :return:
+        """
+        self.payload = payload
+        if CrashReporter.active:
+            # Attempt to upload the report
+            hq_success = smtp_success = False
+            if self._hq is not None:
+                hq_success = self.hq_submit(self.payload)
+                if hq_success:
+                    self.payload['HQ Submission'] = 'Sent'
+            if self._smtp is not None:
+                # Send the report via email
+                smtp_success = self.smtp_submit(self.subject(), self.body(self.payload), self.attachments())
+                if smtp_success:
+                    self.payload['SMTP Submission'] = 'Sent'
+
+        if not CrashReporter.active or (self._smtp and not smtp_success) or (self._hq and not hq_success):
+            # Only store the offline report if any of the upload methods fail, or if the Crash Reporter was disabled
+            report_path = self.store_report(self.payload)
+            self.logger.info('Offline Report stored %s' % report_path)
+
+    def generate_payload(self, err_name, err_msg, analyzed_tb):
         dt = datetime.datetime.now()
-        payload = {'Error Type': self.etype.__name__,
-                   'Error Message': '%s' % self.evalue,
+        payload = {'Error Type': err_name,
+                   'Error Message': err_msg,
                    'Application Name': self.application_name,
                    'Application Version': self.application_version,
                    'User': self.user_identifier,
                    'Date': dt.strftime('%d %B %Y'),
                    'Time': dt.strftime('%I:%M %p'),
-                   'Traceback': analyze_traceback(self.tb),
+                   'Traceback': analyzed_tb,
                    'HQ Submission': 'Not sent' if self._hq else 'Disabled',
                    'SMTP Submission': 'Not sent' if self._smtp else 'Disabled'
                    }
@@ -385,6 +395,15 @@ class CrashReporter(object):
 
     def get_offline_reports(self):
         return sorted(glob.glob(os.path.join(self.report_dir, self._report_name.replace("%d", "*"))))
+
+    def poll(self):
+        for remote, local in CrashReportingProcess.cr_pipes:
+            if remote.poll():
+                pkg = remote.recv()
+                self.logger.debug('Interprocess payload found.')
+                self.handle_payload(self.generate_payload(*pkg))
+                return True
+        return False
 
     def _watcher_thread(self):
         """
