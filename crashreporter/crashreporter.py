@@ -20,8 +20,8 @@ from threading import Thread
 import jinja2
 
 from api import upload_report, upload_many_reports, HQ_DEFAULT_TIMEOUT, SMTP_DEFAULT_TIMEOUT
-from tools import analyze_traceback
 from process import CrashReportingProcess
+from tools import analyze_traceback
 
 
 class CrashReporter(object):
@@ -65,7 +65,7 @@ class CrashReporter(object):
 
     def __init__(self, report_dir=None, config='', logger=None, activate=True,
                  watcher=True, check_interval=5*60):
-        self.logger = logger if logger else logging.getLogger(__name__)
+        self.logger = logger if logger else logging.getLogger('CrashReporter')
         # Setup the directory used to store offline crash reports
         self.report_dir = report_dir
         self.check_interval = check_interval
