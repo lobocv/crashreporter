@@ -1,9 +1,15 @@
 __author__ = 'calvin'
 
-import re
 import inspect
+import re
 import traceback
 from types import FunctionType, MethodType, ModuleType, BuiltinMethodType, BuiltinFunctionType
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
+
 
 
 obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
@@ -47,10 +53,30 @@ def get_object_references(tb, source, max_string_length=1000):
         referenced_attr.update(set(re.findall(obj_ref_regex, line)))
     referenced_attr = sorted(referenced_attr)
     info = []
+    _pass = lambda *args: None
+    _numpy_info = ('dtype', 'shape', 'size', 'min', 'max')
     for attr in referenced_attr:
+        additionals = []
         value = string_variable_lookup(tb, attr)
         if value is not ValueError:
-            vstr = repr(value)
+            if np:
+                # Check for numpy info
+                for np_attr in _numpy_info:
+                    np_value = getattr(value, np_attr, None)
+                    if np_value is not None:
+                        if inspect.isbuiltin(np_value):
+                            np_value = np_value()
+                        additionals.append((np_attr, np_value))
+            else:
+                # Check for length of reference
+                length = getattr(value, '__len__', _pass)()
+                if length is not None:
+                    additionals.append(('length', length))
+
+            if additionals:
+                vstr = ', '.join(['%s: %s' % a for a in additionals] + [repr(value)])
+            else:
+                vstr = repr(value)
             if len(vstr) > max_string_length:
                 vstr = vstr[:max_string_length] + ' ...'
             info.append((attr, vstr))
