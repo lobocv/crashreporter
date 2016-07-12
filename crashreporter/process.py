@@ -1,8 +1,9 @@
 import logging
+import multiprocessing
 import sys
+import traceback
 
 from .tools import analyze_traceback
-import multiprocessing
 
 mp_crash_reporting_enabled = False
 
@@ -49,4 +50,5 @@ class CrashReportingProcess(multiprocessing.Process):
             logging.debug('{cls}: Prepating to exit {cls}: {name}'.format(cls=clsname, name=self.name))
         except Exception as e:
             logging.info('{cls}: Error encountered in {name}'.format(cls=clsname, name=self.name))
+            traceback.print_exc()
             self.exception_handler(e)
