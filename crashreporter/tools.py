@@ -1,6 +1,7 @@
 __author__ = 'calvin'
 
 import inspect
+import logging
 import re
 import traceback
 from types import FunctionType, MethodType, ModuleType, BuiltinMethodType, BuiltinFunctionType
@@ -9,7 +10,6 @@ try:
     import numpy as np
 except ImportError:
     np = None
-
 
 
 obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
@@ -65,7 +65,10 @@ def get_object_references(tb, source, max_string_length=1000):
                     np_value = getattr(value, np_attr, None)
                     if np_value is not None:
                         if inspect.isbuiltin(np_value):
-                            np_value = np_value()
+                            try:
+                                np_value = np_value()
+                            except Exception as e:
+                                logging.error(e)
                         additionals.append((np_attr, np_value))
             else:
                 # Check for length of reference
