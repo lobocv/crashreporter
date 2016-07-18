@@ -15,6 +15,15 @@ except ImportError:
 obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
 
 
+_repr = repr
+def repr(object):
+    try:
+        return _repr(object)
+    except Exception as e:
+        logging.error(e)
+        return 'String Representation not found'
+
+
 def string_variable_lookup(tb, s):
     """
     Look up the value of an object in a traceback by a dot-lookup string.
