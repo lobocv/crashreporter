@@ -38,16 +38,22 @@ class CrashReportingProcess(multiprocessing.Process):
         CrashReportingProcess.cr_pipes.append((self.cr_remote_conn, self.cr_local_conn))
 
     def exception_handler(self, e):
+        logging.debug('CrashReporter: Crash detected on process {}'.format(self.name))
         etype, evalue, tb = sys.exc_info()
         analyzed_traceback = analyze_traceback(tb)
-        self.cr_local_conn.send((etype.__name__, '%s' % evalue, analyzed_traceback))
+        logging.debug('CrashReporter: Done analyzing traceback on process {}'.format(self.name))
+        logging.debug('CrashReporter: Sending traceback data to main process'.format(self.name))
+        try:
+            self.cr_local_conn.send((etype.__name__, '%s' % evalue, analyzed_traceback))
+        except Exception as e:
+            logging.error('CrashReporter: Could not send traceback data to main process.')
 
     def run(self):
         clsname = self.__class__.__name__
         try:
             logging.debug('{cls}: Starting {cls}: {name}'.format(cls=clsname, name=self.name))
             super(CrashReportingProcess, self).run()
-            logging.debug('{cls}: Prepating to exit {cls}: {name}'.format(cls=clsname, name=self.name))
+            logging.debug('{cls}: Preparing to exit {cls}: {name}'.format(cls=clsname, name=self.name))
         except Exception as e:
             logging.info('{cls}: Error encountered in {name}'.format(cls=clsname, name=self.name))
             traceback.print_exc()
