@@ -12,8 +12,8 @@ except ImportError:
     np = None
 
 
-obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
-
+obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')(?:\[(?:\'|\").*(?:\'|\")\])*(?:\.[A-z]+[0-9]*)*")
+dict_lookup_regex = re.compile("(?<=\[)(?:\'|\")([^\'\"]*)(?:\'|\")(?=\])")
 
 _repr = repr
 def repr(object):
@@ -36,12 +36,27 @@ def string_variable_lookup(tb, s):
     :return: value of the
     """
 
-    refs = s.split('.')
-    scope = tb.tb_frame.f_locals.get(refs[0], ValueError)
+    refs = []
+    dot_refs = s.split('.')
+    DOT_LOOKUP = 0
+    DICT_LOOKUP = 1
+    for ii, ref in enumerate(dot_refs):
+        dict_refs = dict_lookup_regex.findall(ref)
+        if dict_refs:
+            bracket = ref.index('[')
+            refs.append((DOT_LOOKUP, ref[:bracket]))
+            refs.extend([(DICT_LOOKUP, t) for t in dict_refs])
+        else:
+            refs.append((DOT_LOOKUP, ref))
+
+    scope = tb.tb_frame.f_locals.get(refs[0][1], ValueError)
     if scope is ValueError:
         return scope
-    for ref in refs[1:]:
-        scope = getattr(scope, ref, ValueError)
+    for lookup, ref in refs[1:]:
+        if lookup == DOT_LOOKUP:
+            scope = getattr(scope, ref, ValueError)
+        else:
+            scope = scope.get(ref, ValueError)
         if scope is ValueError:
             return scope
         elif isinstance(scope, (FunctionType, MethodType, ModuleType, BuiltinMethodType, BuiltinFunctionType)):
