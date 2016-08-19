@@ -18,9 +18,10 @@ class A(object):
         self.endswithnumbers443 = 3
         self.numbers7and7letters7 = 4
         self.my_numpy = np.arange(100)
+        self.custom_dtype_numpy = np.zeros(10, dtype=[('float_field', 'f'), ('uint_field', 'u4'),
+                                                      ('double_field', 'd'), ('string_field', 'a10')])
+
         1/0
-
-
 
 try:
     a = A().func()

@@ -78,6 +78,7 @@ def get_object_references(tb, source, max_string_length=1000):
                                 np_value = np_value()
                             except Exception as e:
                                 logging.error(e)
+                                continue
                         additionals.append((np_attr, np_value))
             else:
                 # Check for length of reference
