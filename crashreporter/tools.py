@@ -53,10 +53,15 @@ def string_variable_lookup(tb, s):
     if scope is ValueError:
         return scope
     for lookup, ref in refs[1:]:
-        if lookup == DOT_LOOKUP:
-            scope = getattr(scope, ref, ValueError)
-        else:
-            scope = scope.get(ref, ValueError)
+        try:
+            if lookup == DOT_LOOKUP:
+                scope = getattr(scope, ref, ValueError)
+            else:
+                scope = scope.get(ref, ValueError)
+        except Exception as e:
+            logging.error(e)
+            scope = ValueError
+
         if scope is ValueError:
             return scope
         elif isinstance(scope, (FunctionType, MethodType, ModuleType, BuiltinMethodType, BuiltinFunctionType)):
