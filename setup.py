@@ -1,5 +1,5 @@
 __author__ = 'lobocv'
-__version__ = '1.12'
+__version__ = '1.13'
 
 from distutils.core import setup
 
