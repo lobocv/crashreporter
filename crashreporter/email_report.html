@@ -87,6 +87,18 @@
         {% endfor %}
     </table>
 
+    {% for header, additional_info in info['Traceback'][-1]['Custom Inspection'].iteritems() %}
+        <h4>{{ header }}</h4>
+        <table border="1" style="width:800px">
+            {% for field, value in additional_info.iteritems() %}
+                <tr>
+                    <td style="width:30%">{{ field|e }}</td>
+                    <td>{{ value|e }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+
 
 </div>
 

@@ -158,6 +158,7 @@ def analyze_traceback(tb, inspection_level=None):
              "Module": module,
              "Error Line": code,
              "Module Line Number": func_lineno,
+             "Custom Inspection": {},
              "Source Code": ''}
         if inspection_level is None or len(extracted_tb) - ii <= inspection_level:
             # Perform advanced inspection on the last `inspection_level` tracebacks.
