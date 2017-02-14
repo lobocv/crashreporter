@@ -15,8 +15,8 @@ def upload_report(server, payload, timeout=HQ_DEFAULT_TIMEOUT):
     :param payload: Dictionary (JSON serializable) of crash data.
     :return: server response
     """
-    data = json.dumps(payload)
     try:
+        data = json.dumps(payload)
         r = requests.post(server + '/reports/upload', data=data, timeout=timeout)
     except Exception as e:
         logging.error(e)
@@ -26,8 +26,8 @@ def upload_report(server, payload, timeout=HQ_DEFAULT_TIMEOUT):
 
 def upload_many_reports(server, payloads, timeout=HQ_DEFAULT_TIMEOUT):
 
-    data = json.dumps(payloads)
     try:
+        data = json.dumps(payloads)
         r = requests.post(server + '/reports/upload_many', data=data, timeout=timeout)
     except Exception as e:
         logging.error(e)
