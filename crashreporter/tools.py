@@ -8,8 +8,9 @@ from types import FunctionType, MethodType, ModuleType, BuiltinMethodType, Built
 
 try:
     import numpy as np
+    _NUMPY_INSTALLED = True
 except ImportError:
-    np = None
+    _NUMPY_INSTALLED = False
 
 
 obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')(?:\[(?:\'|\").*(?:\'|\")\])*(?:\.[A-z]+[0-9]*)*")
@@ -82,37 +83,11 @@ def get_object_references(tb, source, max_string_length=1000):
         referenced_attr.update(set(re.findall(obj_ref_regex, line)))
     referenced_attr = sorted(referenced_attr)
     info = []
-    _pass = lambda *args: None
-    _numpy_info = ('dtype', 'shape', 'size', 'min', 'max')
     for attr in referenced_attr:
-        additionals = []
-        value = string_variable_lookup(tb, attr)
-        if value is not ValueError:
-            if np:
-                # Check for numpy info
-                for np_attr in _numpy_info:
-                    np_value = getattr(value, np_attr, None)
-                    if np_value is not None:
-                        if inspect.isbuiltin(np_value):
-                            try:
-                                np_value = np_value()
-                            except Exception as e:
-                                logging.error(e)
-                                continue
-                        additionals.append((np_attr, np_value))
-            else:
-                # Check for length of reference
-                length = getattr(value, '__len__', _pass)()
-                if length is not None:
-                    additionals.append(('length', length))
-
-            if additionals:
-                vstr = ', '.join(['%s: %s' % a for a in additionals] + [repr(value)])
-            else:
-                vstr = repr(value)
-            if len(vstr) > max_string_length:
-                vstr = vstr[:max_string_length] + ' ...'
-            info.append((attr, vstr))
+        v = string_variable_lookup(tb, attr)
+        if v is not ValueError:
+            ref_string = format_reference(v, max_string_length=max_string_length)
+            info.append((attr, ref_string))
     return info
 
 
@@ -131,13 +106,50 @@ def get_local_references(tb, max_string_length=1000):
         if k == 'self':
             continue
         try:
-            vstr = repr(v)
-            if len(vstr) > max_string_length:
-                vstr = vstr[:max_string_length] + ' ...'
+            vstr = format_reference(v, max_string_length=max_string_length)
             _locals.append((k, vstr))
         except TypeError:
             pass
     return _locals
+
+
+def format_reference(ref, max_string_length=1000):
+    """
+    Converts an object / value into a string representation to pass along in the payload
+    :param ref: object or value
+    :param max_string_length: maximum number of characters to represent the object
+    :return:
+    """
+    _pass = lambda *args: None
+    _numpy_info = ('dtype', 'shape', 'size', 'min', 'max')
+    additionals = []
+    if _NUMPY_INSTALLED and isinstance(ref, np.ndarray):
+        # Check for numpy info
+        for np_attr in _numpy_info:
+            np_value = getattr(ref, np_attr, None)
+            if np_value is not None:
+                if inspect.isbuiltin(np_value):
+                    try:
+                        np_value = np_value()
+                    except Exception as e:
+                        logging.error(e)
+                        continue
+                additionals.append((np_attr, np_value))
+    elif isinstance(ref, (list, tuple, set, dict)):
+        # Check for length of reference
+        length = getattr(ref, '__len__', _pass)()
+        if length is not None:
+            additionals.append(('length', length))
+
+    if additionals:
+        vstr = ', '.join(['%s: %s' % a for a in additionals] + [repr(ref)])
+    else:
+        vstr = repr(ref)
+
+    if len(vstr) > max_string_length:
+        vstr = vstr[:max_string_length] + ' ...'
+
+    return vstr
 
 
 def analyze_traceback(tb, inspection_level=None):
