@@ -75,6 +75,7 @@ class CrashReporter(object):
         self.etype = None
         self.evalue = None
         self.tb = None
+        self.analyzed_traceback = None
         self.payload = None
         self._excepthook = None
         self.inspection_level = 1
@@ -171,8 +172,6 @@ class CrashReporter(object):
         payload = self.generate_payload(err_name, err_msg, analyzed_tb)
         self.handle_payload(payload)
 
-    def analyze_traceback(self, tb):
-        return analyze_traceback(tb)
 
     def exception_handler(self, etype, evalue, tb):
         """
@@ -183,9 +182,13 @@ class CrashReporter(object):
         :param tb: Traceback
         :return:
         """
+        self.etype = etype
+        self.evalue = evalue
+        self.tb = tb
         if etype:
             self.logger.info('CrashReporter: Crashes detected!')
-            self.handle_payload(self.generate_payload(etype.__name__, '%s' % evalue, self.analyze_traceback(tb)))
+            self.analyzed_traceback = analyze_traceback(tb)
+            self.handle_payload(self.generate_payload(etype.__name__, '%s' % evalue, self.analyzed_traceback))
         else:
             self.logger.info('CrashReporter: No crashes detected.')
 
