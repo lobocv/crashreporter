@@ -41,6 +41,8 @@ class CrashReporter(object):
     application_version: Application version as a string to be included in the report
     user_identifier: User identifier as a string to add to the report
     offline_report_limit: Maximum number of offline reports to save.
+    recursion_depth_limit: Maximum number of tracebacks to record in the case of RunetimeError: maximum recursion depth
+                           exceeded
     max_string_length: Maximum string length for values returned in variable inspection. This prevents reports which
                        contain array data from becoming too large.
     inspection_level: The number of traceback objects (from most recent) to inspect for source code, local variables etc
@@ -60,6 +62,7 @@ class CrashReporter(object):
     application_version = None
     user_identifier = None
     offline_report_limit = 10
+    recursion_depth_limit = 10
     max_string_length = 1000
     obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
 
@@ -75,6 +78,7 @@ class CrashReporter(object):
         self.etype = None
         self.evalue = None
         self.tb = None
+        self._recursion_error = False
         self.analyzed_traceback = None
         self.payload = None
         self._excepthook = None
@@ -173,7 +177,10 @@ class CrashReporter(object):
         self.handle_payload(payload)
 
     def _analyze_traceback(self, traceback):
-        analyzed_tb = analyze_traceback(traceback)
+        # To prevent recording a large amount of potentially redundant tracebacks, limit the trace back for the case of
+        # infinite recursion errors.
+        limit = CrashReporter.recursion_depth_limit if self._recursion_error else None
+        analyzed_tb = analyze_traceback(traceback, limit=limit)
         self.custom_inspection(analyzed_tb)
         # Perform serialization check on the possibly user-altered traceback
         overriden = self.__class__.custom_inspection.im_func is not CrashReporter.custom_inspection.im_func
@@ -205,6 +212,8 @@ class CrashReporter(object):
         self.etype = etype
         self.evalue = evalue
         self.tb = tb
+        self._recursion_error = "maximum recursion depth exceeded" in str(self.evalue)
+
         if etype:
             self.logger.info('CrashReporter: Crashes detected!')
             self.analyzed_traceback = self._analyze_traceback(tb)
@@ -254,7 +263,7 @@ class CrashReporter(object):
     def generate_payload(self, err_name, err_msg, analyzed_tb):
         dt = datetime.datetime.now()
         payload = {'Error Type': err_name,
-                   'Error Message': err_msg,
+                   'Error Message': err_msg + self._recursion_error * " (Not all tracebacks are shown)",
                    'Application Name': self.application_name,
                    'Application Version': self.application_version,
                    'User': self.user_identifier,
@@ -338,6 +347,7 @@ class CrashReporter(object):
                     except OSError as e:
                         logging.error(e)
 
+        self.logger.info('CrashReporter: Deleting offline reports. %d reports remaining.' % len(remaining_reports))
         return remaining_reports
 
     def submit_offline_reports(self, **kwargs):

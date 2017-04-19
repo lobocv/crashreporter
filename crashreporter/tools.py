@@ -152,7 +152,7 @@ def format_reference(ref, max_string_length=1000):
     return vstr
 
 
-def analyze_traceback(tb, inspection_level=None):
+def analyze_traceback(tb, inspection_level=None, limit=None):
     """
     Extract trace back information into a list of dictionaries.
 
@@ -161,7 +161,7 @@ def analyze_traceback(tb, inspection_level=None):
     """
     info = []
     tb_level = tb
-    extracted_tb = traceback.extract_tb(tb)
+    extracted_tb = traceback.extract_tb(tb, limit=limit)
     for ii, (filepath, line, module, code) in enumerate(extracted_tb):
         func_source, func_lineno = inspect.getsourcelines(tb_level.tb_frame)
 
