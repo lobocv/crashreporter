@@ -63,6 +63,7 @@ class CrashReporter(object):
     user_identifier = None
     offline_report_limit = 10
     recursion_depth_limit = 10
+    send_at_most = 3            # max number of offline reports to send in batch
     max_string_length = 1000
     obj_ref_regex = re.compile("[A-z]+[0-9]*\.(?:[A-z]+[0-9]*\.?)+(?!\')")
 
@@ -134,7 +135,7 @@ class CrashReporter(object):
                     if self.get_offline_reports():
                         # First attempt to send the reports, if that fails then start the watcher
                         self.submit_offline_reports()
-                        remaining_reports = self.delete_offline_reports()
+                        remaining_reports = len(self.get_offline_reports())
                         if remaining_reports and self.watcher_enabled:
                             self.start_watcher()
                 else:
@@ -366,7 +367,7 @@ class CrashReporter(object):
                 hq_success = self._hq_send_offline_reports()
             except Exception as e:
                 logging.error(e)
-
+        remaining_reports = self.delete_offline_reports()
         return smtp_success and hq_success
 
     def store_report(self, payload):
@@ -461,8 +462,8 @@ class CrashReporter(object):
                 break
             self.logger.info('CrashReporter: Attempting to send offline reports.')
             self.submit_offline_reports()
-            remaining_reports = self.delete_offline_reports()
-            if len(remaining_reports) == 0:
+            remaining_reports = len(self.get_offline_reports())
+            if remaining_reports == 0:
                 break
         self._watcher = None
         self.logger.info('CrashReporter: Watcher stopped.')
@@ -489,7 +490,8 @@ class CrashReporter(object):
         offline_reports = self.get_offline_reports()
         payloads = {}
         if offline_reports:
-            for report in offline_reports:
+
+            for report in offline_reports[:self.send_at_most]:
                 with open(report, 'r') as _f:
                     payload = json.load(_f)
                     if payload['HQ Submission'] == 'Not sent':
