@@ -351,24 +351,40 @@ class CrashReporter(object):
         self.logger.info('CrashReporter: Deleting offline reports. %d reports remaining.' % len(remaining_reports))
         return remaining_reports
 
-    def submit_offline_reports(self, **kwargs):
+    def submit_offline_reports(self):
         """
         Submit offline reports using the enabled methods (SMTP and/or HQ)
-        Returns a list of booleans signifying upload method success (smtp_success, hq_success)
+        Returns a tuple of (N sent reports, N remaining reports)
         """
-        hq_success = smtp_success = False
-        if kwargs.get('smtp', True) and self._smtp is not None:
+        smtp_enabled = bool(self._smtp)
+        hq_enabled = bool(self._hq)
+        offline_reports = self.get_offline_reports()
+        logging.info('Submitting %d offline crash reports' % len(offline_reports))
+        offline_reports = offline_reports[:self.send_at_most]
+
+        if smtp_enabled:
             try:
-                smtp_success = self._smtp_send_offline_reports()
+                smtp_success = self._smtp_send_offline_reports(*offline_reports)
             except Exception as e:
                 logging.error(e)
-        if kwargs.get('hq', True) and self._hq is not None:
+                smtp_success = [False] * len(offline_reports)
+        else:
+            smtp_success = [True] * len(offline_reports)
+
+        if hq_enabled:
             try:
-                hq_success = self._hq_send_offline_reports()
+                hq_success = self._hq_send_offline_reports(*offline_reports)
             except Exception as e:
                 logging.error(e)
+                hq_success = [False] * len(offline_reports)
+        else:
+            hq_success = [True] * len(offline_reports)
+
         remaining_reports = self.delete_offline_reports()
-        return smtp_success and hq_success
+        success = [s1 and s2 for (s1, s2) in zip(smtp_success, hq_success)]
+        logging.info('%d crash reports successfully submitted' % success.count(True))
+        logging.info('%d crash reports remain to be submitted' % len(remaining_reports))
+        return all(success)
 
     def store_report(self, payload):
         """
@@ -468,8 +484,7 @@ class CrashReporter(object):
         self._watcher = None
         self.logger.info('CrashReporter: Watcher stopped.')
 
-    def _smtp_send_offline_reports(self):
-        offline_reports = self.get_offline_reports()
+    def _smtp_send_offline_reports(self, *offline_reports):
         success = []
         if offline_reports:
             # Add the body of the message
@@ -484,14 +499,13 @@ class CrashReporter(object):
                         with open(report, 'w') as js:
                             json.dump(payload, js)
             self.logger.info('CrashReporter: %d Offline reports sent.' % sum(success))
-            return success
+        return success
 
-    def _hq_send_offline_reports(self):
-        offline_reports = self.get_offline_reports()
+    def _hq_send_offline_reports(self, *offline_reports):
         payloads = {}
         if offline_reports:
 
-            for report in offline_reports[:self.send_at_most]:
+            for report in offline_reports:
                 with open(report, 'r') as _f:
                     payload = json.load(_f)
                     if payload['HQ Submission'] == 'Not sent':
