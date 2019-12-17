@@ -102,7 +102,7 @@ def get_local_references(tb, max_string_length=1000):
         _locals = [('self', repr(tb.tb_frame.f_locals['self']))]
     else:
         _locals = []
-    for k, v in tb.tb_frame.f_locals.iteritems():
+    for k, v in tb.tb_frame.f_locals.items():
         if k == 'self':
             continue
         try:

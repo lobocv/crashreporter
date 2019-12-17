@@ -54,9 +54,9 @@ except ZeroDivisionError:
     objs = get_object_references(tb, src)
 
 for o in objs:
-    print o
+    print (o)
 
-print 'Test Complete: {} of {} objects found'.format(len(objs), 11)
+print ('Test Complete: {} of {} objects found'.format(len(objs), 11))
 sdf3=3
 
 

@@ -1,11 +1,11 @@
 import sys
 import os
 
-print '******************************** WARNING **************************************\n' \
+print ('******************************** WARNING **************************************\n' \
       '              CRASHREPORTER CODE INJECTION HAS BEEN IMPORTED.\n' \
       '       IT IS HIGHLY RECOMMENDED THAT THIS ONLY BE USED IN DEVELOPMENT\n' \
       '    FOR DEBUGGING PURPOSES AS IT ALLOW POSSIBLE MALICIOUS CODE TO BE INJECTED.\n'\
-      '*******************************************************************************' \
+      '*******************************************************************************') 
 
 
 def inject_path(path):
@@ -64,5 +64,5 @@ def inject_module(module, *args, **kwargs):
         if f:
             return f(*args, **kwargs)
     except Exception as e:
-        print e
+        print (e)
         return e
