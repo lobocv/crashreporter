@@ -1,6 +1,6 @@
 __author__ = 'calvin'
 
-import ConfigParser
+import configparser
 import datetime
 import glob
 import json
@@ -187,11 +187,11 @@ class CrashReporter(object):
         overriden = self.__class__.custom_inspection.im_func is not CrashReporter.custom_inspection.im_func
         if overriden:
             for tb in analyzed_tb:
-                for key, value in tb['Custom Inspection'].iteritems():
+                for key, value in tb['Custom Inspection'].items():
                     try:
                         json.dumps(value)
                     except TypeError:
-                        tb['Custom Inspection'][key] = {k: safe_repr(v) for k, v in value.iteritems()}
+                        tb['Custom Inspection'][key] = {k: safe_repr(v) for k, v in value.items()}
         return analyzed_tb
 
     def custom_inspection(self, analyzed_traceback):
@@ -277,7 +277,7 @@ class CrashReporter(object):
         return payload
 
     def load_configuration(self, config):
-        cfg = ConfigParser.ConfigParser()
+        cfg = configparser.ConfigParser()
 
         with open(config, 'r') as _f:
             cfg.readfp(_f)
@@ -518,7 +518,7 @@ class CrashReporter(object):
                     return [False] * len(payloads)
 
             # Set the flag in the payload signifying that the HQ submission was successful
-            for report, payload in payloads.iteritems():
+            for report, payload in payloads.items():
                 payload['HQ Submission'] = 'Sent'
                 with open(report, 'w') as js:
                     json.dump(payload, js)
